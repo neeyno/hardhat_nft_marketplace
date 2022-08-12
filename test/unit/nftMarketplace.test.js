@@ -143,7 +143,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                       })
                   )
                       .to.emit(nftMarketplace, "ItemBought")
-                      .withArgs(accounts[1].address, nftAddress, tokenId)
+                      .withArgs(accounts[1].address, nftAddress, tokenId, price1Eth)
               })
           })
 
