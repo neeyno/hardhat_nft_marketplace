@@ -1,4 +1,3 @@
-<hr>
 <div align="center">
  <h2 align="center">NFT Marketplace</h2>
   <p align="center">
@@ -18,5 +17,5 @@
 
 ### Description
 
-This repository contains smart contract part of NFT Marketplace Dapp.
+This repository contains smart contract for NFT Marketplace Dapp.
 The application was built as a study project to learn more about blockchain and smart contract development. It enables Metamask wallet connection and allows users to list, buy and sell NFTs.

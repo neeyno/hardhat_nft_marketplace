@@ -1,6 +1,9 @@
 const { assert, expect } = require("chai")
 const { ethers, deployments, getNamedAccounts, network } = require("hardhat")
-const { developmentChains, networkConfig } = require("../../helper-hardhat-config")
+const {
+    developmentChains,
+    networkConfig,
+} = require("../../helper-hardhat-config")
 
 !developmentChains.includes(network.name)
     ? describe.skip
@@ -16,7 +19,10 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               await deployments.fixture(["test", "market1"])
               nftSample = await ethers.getContract("BasicNFT", deployer)
               nftAddress = nftSample.address
-              nftMarketplace = await ethers.getContract("NFTMarketplace", deployer)
+              nftMarketplace = await ethers.getContract(
+                  "NFTMarketplace",
+                  deployer
+              )
               accounts = await ethers.getSigners()
           })
 
@@ -33,7 +39,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               it("reverts if not approved", async function () {
                   await expect(
                       nftMarketplace.listItem(nftAddress, tokenId, price1Eth)
-                  ).to.be.revertedWith("NFTMarketplace__NotApprovedForMarketplace()")
+                  ).to.be.revertedWith(
+                      "NFTMarketplace__NotApprovedForMarketplace()"
+                  )
               })
 
               it("checks that item has not been listed", async function () {
@@ -48,7 +56,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               it("checks the owner of the item", async function () {
                   await nftSample.approve(nftMarketplace.address, tokenId)
                   await expect(
-                      nftMarketplace.connect(accounts[1]).listItem(nftAddress, tokenId, price1Eth)
+                      nftMarketplace
+                          .connect(accounts[1])
+                          .listItem(nftAddress, tokenId, price1Eth)
                   ).to.be.revertedWith("NFTMarketplace__NotOwner")
               })
 
@@ -63,7 +73,10 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               it("lists the item to the marketplace", async function () {
                   await nftSample.approve(nftMarketplace.address, tokenId)
                   await nftMarketplace.listItem(nftAddress, tokenId, price1Eth)
-                  const { price, seller } = await nftMarketplace.getListing(nftAddress, tokenId)
+                  const { price, seller } = await nftMarketplace.getListing(
+                      nftAddress,
+                      tokenId
+                  )
 
                   assert.equal(price.toString(), price1Eth.toString())
                   assert.equal(seller, deployer)
@@ -71,7 +84,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
               it("emits event(ItemListed)", async function () {
                   await nftSample.approve(nftMarketplace.address, tokenId)
-                  await expect(nftMarketplace.listItem(nftAddress, tokenId, price1Eth))
+                  await expect(
+                      nftMarketplace.listItem(nftAddress, tokenId, price1Eth)
+                  )
                       .to.emit(nftMarketplace, "ItemListed")
                       .withArgs(deployer, nftAddress, tokenId, price1Eth)
               })
@@ -85,27 +100,33 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               })
 
               it("checks that the item is listed", async function () {
-                  await expect(nftMarketplace.buyItem(nftAddress, "2")).to.be.revertedWith(
-                      "NFTMarketplace__ItemNotListed"
-                  )
+                  await expect(
+                      nftMarketplace.buyItem(nftAddress, "2")
+                  ).to.be.revertedWith("NFTMarketplace__ItemNotListed")
               })
 
               it("checks price matching", async function () {
                   const sendValue = ethers.utils.parseEther("0.99")
                   await expect(
-                      nftMarketplace.buyItem(nftAddress, tokenId, { value: sendValue })
+                      nftMarketplace.buyItem(nftAddress, tokenId, {
+                          value: sendValue,
+                      })
                   ).to.be.revertedWith("NFTMarketplace__PriceNotMet")
               })
 
               it("adds seller's proceeds", async function () {
-                  const proceedsBefore = await nftMarketplace.getProceeds(deployer)
+                  const proceedsBefore = await nftMarketplace.getProceeds(
+                      deployer
+                  )
                   const tx = await nftMarketplace
                       .connect(accounts[1])
                       .buyItem(nftAddress, tokenId, {
                           value: price1Eth,
                       })
                   await tx.wait(1)
-                  const proceedsAfter = await nftMarketplace.getProceeds(deployer)
+                  const proceedsAfter = await nftMarketplace.getProceeds(
+                      deployer
+                  )
 
                   assert.equal("0", proceedsBefore.toString())
                   assert.equal(price1Eth.toString(), proceedsAfter.toString())
@@ -118,10 +139,16 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                           value: price1Eth,
                       })
                   await tx.wait(1)
-                  const { price, seller } = await nftMarketplace.getListing(nftAddress, tokenId)
+                  const { price, seller } = await nftMarketplace.getListing(
+                      nftAddress,
+                      tokenId
+                  )
 
                   assert.equal("0", price.toString())
-                  assert.equal("0x0000000000000000000000000000000000000000", seller.toString())
+                  assert.equal(
+                      "0x0000000000000000000000000000000000000000",
+                      seller.toString()
+                  )
               })
 
               it("transfers item to the buyer", async function () {
@@ -138,12 +165,19 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
               it("emits event(ItemBought)", async function () {
                   await expect(
-                      nftMarketplace.connect(accounts[1]).buyItem(nftAddress, tokenId, {
-                          value: price1Eth,
-                      })
+                      nftMarketplace
+                          .connect(accounts[1])
+                          .buyItem(nftAddress, tokenId, {
+                              value: price1Eth,
+                          })
                   )
                       .to.emit(nftMarketplace, "ItemBought")
-                      .withArgs(accounts[1].address, nftAddress, tokenId, price1Eth)
+                      .withArgs(
+                          accounts[1].address,
+                          nftAddress,
+                          tokenId,
+                          price1Eth
+                      )
               })
           })
 
@@ -157,7 +191,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
               it("checks the owner of deleting item", async function () {
                   await expect(
-                      nftMarketplace.connect(accounts[1]).cancelListing(nftAddress, tokenId)
+                      nftMarketplace
+                          .connect(accounts[1])
+                          .cancelListing(nftAddress, tokenId)
                   ).to.be.revertedWith("NFTMarketplace__NotOwner()")
               })
 
@@ -170,16 +206,27 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               })
 
               it("removes chosen item", async function () {
-                  const tx = await nftMarketplace.cancelListing(nftAddress, tokenId)
+                  const tx = await nftMarketplace.cancelListing(
+                      nftAddress,
+                      tokenId
+                  )
                   await tx.wait(1)
-                  const { price, seller } = await nftMarketplace.getListing(nftAddress, tokenId)
+                  const { price, seller } = await nftMarketplace.getListing(
+                      nftAddress,
+                      tokenId
+                  )
 
                   assert.equal("0", price.toString())
-                  assert.equal("0x0000000000000000000000000000000000000000", seller.toString())
+                  assert.equal(
+                      "0x0000000000000000000000000000000000000000",
+                      seller.toString()
+                  )
               })
 
               it("emits event(ItemDelisted)", async function () {
-                  await expect(nftMarketplace.cancelListing(nftAddress, tokenId))
+                  await expect(
+                      nftMarketplace.cancelListing(nftAddress, tokenId)
+                  )
                       .to.emit(nftMarketplace, "ItemDelisted")
                       .withArgs(deployer, nftAddress, tokenId)
               })
@@ -194,9 +241,16 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
               it("updates the price with a new value", async function () {
                   const newValue = ethers.utils.parseEther("2")
-                  const tx = await nftMarketplace.updatePrice(nftAddress, tokenId, newValue)
+                  const tx = await nftMarketplace.updatePrice(
+                      nftAddress,
+                      tokenId,
+                      newValue
+                  )
                   await tx.wait(1)
-                  const { price, seller } = await nftMarketplace.getListing(nftAddress, tokenId)
+                  const { price, seller } = await nftMarketplace.getListing(
+                      nftAddress,
+                      tokenId
+                  )
 
                   assert.equal(newValue.toString(), price.toString())
                   assert.equal(deployer, seller)
@@ -204,7 +258,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
               it("emits event(ItemListed) on update", async function () {
                   const newValue = ethers.utils.parseEther("2")
-                  await expect(nftMarketplace.updatePrice(nftAddress, tokenId, newValue))
+                  await expect(
+                      nftMarketplace.updatePrice(nftAddress, tokenId, newValue)
+                  )
                       .to.emit(nftMarketplace, "ItemListed")
                       .withArgs(deployer, nftAddress, tokenId, newValue)
               })
@@ -229,9 +285,13 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                       .buyItem(nftAddress, tokenId, {
                           value: price1Eth,
                       })
-                  const proceedsBefore = await nftMarketplace.getProceeds(deployer)
+                  const proceedsBefore = await nftMarketplace.getProceeds(
+                      deployer
+                  )
                   const tx2 = await nftMarketplace.withdrawProceeds()
-                  const proceedsAfter = await nftMarketplace.getProceeds(deployer)
+                  const proceedsAfter = await nftMarketplace.getProceeds(
+                      deployer
+                  )
 
                   assert.equal(price1Eth.toString(), proceedsBefore.toString())
                   assert.equal("0", proceedsAfter.toString())
@@ -245,13 +305,15 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                           value: price1Eth,
                       })
                   await buyTx.wait(1)
-                  const beforeSellerBalance = await nftMarketplace.provider.getBalance(deployer)
+                  const beforeSellerBalance =
+                      await nftMarketplace.provider.getBalance(deployer)
                   // act
                   const tx = await nftMarketplace.withdrawProceeds()
                   const txReceipt = await tx.wait(1)
                   const { gasUsed, effectiveGasPrice } = txReceipt
                   const gasCost = gasUsed.mul(effectiveGasPrice) // multiply
-                  const afterSelLerBalance = await nftMarketplace.provider.getBalance(deployer)
+                  const afterSelLerBalance =
+                      await nftMarketplace.provider.getBalance(deployer)
                   // assert
                   assert.equal(
                       price1Eth.add(beforeSellerBalance).toString(),

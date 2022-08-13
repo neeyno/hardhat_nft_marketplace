@@ -18,7 +18,10 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     })
 
     // verify
-    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+    if (
+        !developmentChains.includes(network.name) &&
+        process.env.ETHERSCAN_API_KEY
+    ) {
         log("Verifying...")
         await verify(nftMarketplace.address, [])
     }
