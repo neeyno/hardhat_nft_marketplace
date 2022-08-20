@@ -13,7 +13,7 @@ async function moveBlocks(amount, sleepAmount = 0) {
         })
 
         if (sleepAmount > 0) {
-            console.log(`sleeping ${index + 1} sec`)
+            console.log(`block ${index + 1}`)
             await sleep(sleepAmount)
         }
     }
