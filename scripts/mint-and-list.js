@@ -14,7 +14,7 @@ async function main() {
     //
     console.log("Listing...")
     await nftSample.approve(nftMarketplace.address, tokenId)
-    const priceValue = ethers.utils.parseEther("0.1")
+    const priceValue = ethers.utils.parseEther("0.01")
     const listTx = await nftMarketplace.listItem(
         nftSample.address,
         tokenId,
