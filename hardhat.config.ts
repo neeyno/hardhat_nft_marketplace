@@ -29,6 +29,9 @@ const config: HardhatUserConfig = {
             default: 0, // here this will by default take the first account as deployer
         },
     },
+    mocha: {
+        timeout: 300000, // 300 seconds max for running tests
+    },
 }
 
 export default config

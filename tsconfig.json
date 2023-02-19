@@ -5,10 +5,14 @@
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
         "strict": true,
-        "skipLibCheck": true,
-        "rootDirs": ["./src", "./scripts", "./test"]
+        "skipLibCheck": true
     },
-    "exclude": ["dist", "node_modules"],
-    "include": ["./test", "./src", "./scripts"],
-    "files": ["./hardhat.config.ts"]
+    "include": [
+        "./deploy",
+        "./test",
+        "./tasks",
+        "./typechain-types",
+        "./scripts"
+    ],
+    "files": ["./hardhat.config.ts", "./helper-hardhat-config.ts"]
 }

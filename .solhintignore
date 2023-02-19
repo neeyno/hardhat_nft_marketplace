@@ -1,0 +1,5 @@
+node_modules/
+temp/
+
+contracts/test
+contracts/mocks
