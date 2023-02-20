@@ -3,13 +3,13 @@ pragma solidity =0.8.17;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
-import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract MyRoyaltyNFT is ERC2981, ERC721 {
     using Strings for uint256;
+    using Base64 for bytes;
 
     string private constant BASE64_jsonPrefix = "data:application/json;base64,";
     string private constant TOKEN_URI =
@@ -19,6 +19,7 @@ contract MyRoyaltyNFT is ERC2981, ERC721 {
 
     constructor() ERC721("My Royalty NFT", "MRN") {
         _tokenCounter = 0;
+        _setDefaultRoyalty(msg.sender, 5000);
     }
 
     /**
@@ -30,38 +31,35 @@ contract MyRoyaltyNFT is ERC2981, ERC721 {
         // ERC2981 InterfaceId = "0x2a55205a"
         // ERC721 InterfaceId = "0x80ac58cd"
         // ERC165 InterfaceId = "0x01ffc9a7"
-        return
-            interfaceId == type(IERC2981).interfaceId ||
-            super.supportsInterface(interfaceId);
+        return super.supportsInterface(interfaceId);
     }
 
-    function mintNFT() external returns (uint256) {
-        _tokenCounter = _tokenCounter + 1;
-        _safeMint(msg.sender, _tokenCounter);
-        return _tokenCounter;
+    function mintNFT(address to) external returns (uint256) {
+        uint256 newTokenId = _tokenCounter;
+        _tokenCounter = newTokenId + 1;
+        _safeMint(to, newTokenId);
+        _setTokenRoyalty(newTokenId, to, 100); // 100 = 1 % royalty
+        return newTokenId;
     }
 
     function tokenURI(
         uint256 tokenId
     ) public pure override returns (string memory) {
-        // return TOKEN_URI;
+        // string.concat("str1","str2"); ?
+        // abi.encodePacked("str1","str2"); ?
         return
-            string(
-                abi.encodePacked(
-                    BASE64_jsonPrefix,
-                    Base64.encode(
-                        bytes(
-                            abi.encodePacked(
-                                '{"name":"NFToken #',
-                                tokenId.toString(),
-                                '", "description": "Basic NFT collection", ',
-                                '"attributes": [{"trait_type": "Rarity", "value": "1/1"}], "image":"',
-                                TOKEN_URI,
-                                '"}'
-                            )
-                        )
+            string.concat(
+                BASE64_jsonPrefix,
+                bytes(
+                    string.concat(
+                        "{'name':'NFToken #",
+                        tokenId.toString(),
+                        "', 'description': 'Basic NFT collection', ",
+                        "'attributes': [{'trait_type': 'Rarity', 'value': '1/1'}], 'image':'",
+                        TOKEN_URI,
+                        "'}"
                     )
-                )
+                ).encode()
             );
     }
 

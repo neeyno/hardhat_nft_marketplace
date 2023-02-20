@@ -2,6 +2,8 @@
 
 pragma solidity =0.8.17;
 
+import {Listing} from "../libraries/LibNFTMarketplace.sol";
+
 interface INFTMarketplace {
     /* 
     // Events 
@@ -42,6 +44,13 @@ interface INFTMarketplace {
         uint256 tokenId,
         uint256 newPrice
     ) external;
+
+    function getListing(
+        address nftContract,
+        uint256 tokenId
+    ) external view returns (Listing memory);
+
+    function getProceeds(address seller) external view returns (uint256);
 }
 
 interface INFTMarketplaceInternal {
@@ -54,6 +63,7 @@ interface INFTMarketplaceInternal {
     error NFTMarket__NoProceeds();
     error NFTMarket__FailedTransfer();
     error NFTMarket__ZeroValue();
+    error NFTMarket__safeTransferFailed(bytes returndata);
 }
 
 interface INFTMarketplaceBase is INFTMarketplaceInternal, INFTMarketplace {}
