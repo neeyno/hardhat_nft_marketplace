@@ -4,7 +4,7 @@ import { ethers, deployments, network } from "hardhat"
 import { developmentChains, networkConfig } from "../../helper-hardhat-config"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { NFTMarketplace, MyRoyaltyNFT } from "../../typechain-types"
-import { BigNumber } from "ethers"
+import { BigNumber, ContractReceipt, ContractTransaction } from "ethers"
 
 const toWei = (value: number): BigNumber =>
     ethers.utils.parseEther(value.toString()) // toWei(1) = 10e18 wei
@@ -259,7 +259,59 @@ describe("NFt Marketplace unit test", function () {
                 })
             )
                 .to.emit(nftMarketplace, "ItemBought")
-                .withArgs(user.address, royaltyNft.address, 0, toWei(5))
+                .withArgs(user.address, royaltyNft.address, 0, toWei(5), "0x")
         })
+    })
+
+    describe("tx fails if seller removes approval  - buyItem()", function () {
+        beforeEach(async function () {
+            await royaltyNft.mintNFT(deployer.address)
+            await royaltyNft.approve(nftMarketplace.address, 0)
+            await nftMarketplace.listItem(royaltyNft.address, 0, toWei(6))
+        })
+
+        it("reverts with custom error - NotApproved", async function () {
+            await royaltyNft.approve(ethers.constants.AddressZero, 0)
+
+            await expect(
+                nftMarketplace.connect(user).buyItem(royaltyNft.address, 0, {
+                    value: toWei(6),
+                })
+            ).to.be.revertedWithCustomError(
+                nftMarketplace,
+                "NFTMarket__NotApprovedForMarketplace"
+            )
+        })
+        /* 
+        let tx: unknown
+
+        it("restores user balance", async function () {
+            await royaltyNft.approve(ethers.constants.AddressZero, 0)
+            console.log(
+                (await ethers.provider.getBalance(user.address)).toString()
+            )
+            try {
+                tx = await nftMarketplace
+                    .connect(user)
+                    .buyItem(royaltyNft.address, 0, {
+                        value: toWei(6),
+                    })
+            } catch (error) {
+                console.log(error)
+            }
+        })
+
+        function instanceOftx(object: any): object is ContractReceipt {
+            return "events" in object
+        }
+
+        after(async function () {
+            console.log()
+            const txReceipt = instanceOftx(tx) ? tx : await tx.wait()
+            const { gasUsed, effectiveGasPrice } = txReceipt
+            const gasCost = gasUsed.mul(effectiveGasPrice)
+            const userBalance = await ethers.provider.getBalance(user.address)
+            expect(userBalance).to.eq(toWei(10000).sub(gasCost))
+        }) */
     })
 })

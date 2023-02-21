@@ -4,43 +4,31 @@ pragma solidity =0.8.17;
 
 import "hardhat/console.sol";
 
-import {IERC721} from "./interfaces/IERC721.sol";
-import {INFTMarketplaceBase} from "./interfaces/INFTMarketplace.sol";
-import {Listing, LibNFTMarket} from "./libraries/LibNFTMarketplace.sol";
+import {INFTMarketplace} from "./interfaces/INFTMarketplace.sol";
+import "./libraries/LibNFTMarketplace.sol";
 
-contract NFTMarketplace is INFTMarketplaceBase {
-    /*  
-    // State Variables 
-    */
+contract NFTMarketplace is INFTMarketplace, Modifiers {
+    using NFTMarketAddress for address;
+
+    /* State Variables */
+
+    // Mapping from NFT contract address from token ID to Listing
     mapping(address => mapping(uint256 => Listing)) private _listings;
-    mapping(address => uint256) private _proceeds; // Seller address to amount earned
 
-    /* 
-    // Modifiers 
-    */
-    modifier validValue(uint256 value) {
-        if (value == 0) {
-            revert NFTMarket__ZeroValue();
-        }
-        _;
-    }
+    // Mapping seller address to amount earned
+    mapping(address => uint256) private _proceeds;
 
-    // Fallback — Receive function
+    /* External functions */
 
-    /* 
-    // External functions 
-    */
     function listItem(
         address nftContract,
         uint256 tokenId,
         uint256 price
     ) external validValue(price) {
-        _requireIsOwner(nftContract, tokenId);
+        (msg.sender).requireIsOwner(nftContract, tokenId);
 
-        // check item is approved for marketplace
-        if (IERC721(nftContract).getApproved(tokenId) != address(this)) {
-            revert NFTMarket__NotApprovedForMarketplace();
-        }
+        // check item is approved for the marketplace
+        address(this).requireIsApproved(nftContract, tokenId);
 
         Listing memory listing = _listings[nftContract][tokenId];
 
@@ -59,16 +47,12 @@ contract NFTMarketplace is INFTMarketplaceBase {
         address nftContract,
         uint256 tokenId
     ) external override {
-        /* IERC721 nft = IERC721(nftContract);
-        // checks that msg.sender is onwer of the nft
-        if (nft.ownerOf(tokenId) != msg.sender) {
-            revert NFTMarket__NotOwner();
-        } */
+        (msg.sender).requireIsOwner(nftContract, tokenId);
 
-        _requireIsOwner(nftContract, tokenId);
-        _requireIsListed(_listings[nftContract][tokenId]);
+        requireIsListed(_listings[nftContract][tokenId]);
 
         delete (_listings[nftContract][tokenId]);
+
         emit ItemDelisted(msg.sender, nftContract, tokenId);
     }
 
@@ -78,19 +62,21 @@ contract NFTMarketplace is INFTMarketplaceBase {
     ) external payable override validValue(msg.value) /* noReentrant*/ {
         Listing memory listedItem = _listings[nftContract][tokenId];
 
-        _requireIsListed(listedItem);
+        requireIsListed(listedItem);
 
         if (msg.value < listedItem.price) {
             revert NFTMarket__PriceNotMet(msg.value, listedItem.price);
         }
 
-        delete (_listings[nftContract][tokenId]);
+        delete _listings[nftContract][tokenId];
 
         unchecked {
             _proceeds[listedItem.seller] += msg.value;
         }
 
-        (bool success, bytes memory data) = nftContract.call(
+        address(this).requireIsApproved(nftContract, tokenId);
+
+        (bool success, bytes memory returnData) = nftContract.call(
             abi.encodeWithSignature(
                 "safeTransferFrom(address,address,uint256)",
                 listedItem.seller,
@@ -99,11 +85,15 @@ contract NFTMarketplace is INFTMarketplaceBase {
             )
         );
 
-        if (!LibNFTMarket.verifyCallResult(nftContract, success, data)) {
-            revert NFTMarket__safeTransferFailed(data);
-        }
+        (nftContract).verifyCallResult(success, returnData);
 
-        emit ItemBought(msg.sender, nftContract, tokenId, msg.value);
+        emit ItemBought(
+            msg.sender,
+            nftContract,
+            tokenId,
+            msg.value,
+            returnData
+        );
     }
 
     function updatePrice(
@@ -111,8 +101,9 @@ contract NFTMarketplace is INFTMarketplaceBase {
         uint256 tokenId,
         uint256 newPrice
     ) external override validValue(newPrice) {
-        _requireIsOwner(nftContract, tokenId);
-        _requireIsListed(_listings[nftContract][tokenId]);
+        (msg.sender).requireIsOwner(nftContract, tokenId);
+
+        requireIsListed(_listings[nftContract][tokenId]);
 
         _listings[nftContract][tokenId].price = newPrice;
 
@@ -135,19 +126,4 @@ contract NFTMarketplace is INFTMarketplaceBase {
     // Public visible functions
     // Internal visible functions
     // Private visible functions
-
-    function _requireIsOwner(
-        address nftContract,
-        uint256 tokenId
-    ) private view {
-        if (IERC721(nftContract).ownerOf(tokenId) != msg.sender) {
-            revert NFTMarket__NotOwner();
-        }
-    }
-
-    function _requireIsListed(Listing memory item) private pure {
-        if (item.price == 0) {
-            revert NFTMarket__ItemNotListed();
-        }
-    }
 }

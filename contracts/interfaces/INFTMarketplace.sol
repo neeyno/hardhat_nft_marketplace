@@ -18,7 +18,8 @@ interface INFTMarketplace {
         address indexed buyer,
         address indexed nftAddress,
         uint256 indexed tokenId,
-        uint256 price
+        uint256 price,
+        bytes returnData
     );
     event ItemDelisted(
         address indexed seller,
@@ -53,6 +54,7 @@ interface INFTMarketplace {
     function getProceeds(address seller) external view returns (uint256);
 }
 
+/* 
 interface INFTMarketplaceInternal {
     error NFTMarket__NotApprovedForMarketplace();
     error NFTMarket__ItemAlreadyListed();
@@ -67,3 +69,4 @@ interface INFTMarketplaceInternal {
 }
 
 interface INFTMarketplaceBase is INFTMarketplaceInternal, INFTMarketplace {}
+ */

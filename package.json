@@ -11,6 +11,7 @@
     "hardhat-deploy": "^0.11.23"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.1"
+    "@openzeppelin/contracts": "^4.8.1",
+    "dotenv": "^16.0.3"
   }
 }

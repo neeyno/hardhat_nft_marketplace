@@ -9,6 +9,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract MyRoyaltyNFT is ERC2981, ERC721 {
     using Strings for uint256;
+    using Strings for address;
     using Base64 for bytes;
 
     string private constant BASE64_jsonPrefix = "data:application/json;base64,";
@@ -44,9 +45,11 @@ contract MyRoyaltyNFT is ERC2981, ERC721 {
 
     function tokenURI(
         uint256 tokenId
-    ) public pure override returns (string memory) {
+    ) public view override returns (string memory) {
+        _requireMinted(tokenId);
         // string.concat("str1","str2"); ?
         // abi.encodePacked("str1","str2"); ?
+        (address royaltiRecipient, ) = royaltyInfo(tokenId, 10000);
         return
             string.concat(
                 BASE64_jsonPrefix,
@@ -55,8 +58,10 @@ contract MyRoyaltyNFT is ERC2981, ERC721 {
                         "{'name':'NFToken #",
                         tokenId.toString(),
                         "', 'description': 'Basic NFT collection', ",
-                        "'attributes': [{'trait_type': 'Rarity', 'value': '1/1'}], 'image':'",
+                        "'attributes': [{'trait_type': 'Rarity', 'value': '1 / infinity'}], 'image':'",
                         TOKEN_URI,
+                        "', 'seller_fee_basis_points': 100, 'fee_recipient': '",
+                        royaltiRecipient.toHexString(),
                         "'}"
                     )
                 ).encode()
