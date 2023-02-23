@@ -10,7 +10,7 @@ struct Listing {
     uint256 price;
 }
 
-library NFTMarketAddress {
+library LibNFTMarket {
     function requireIsOwner(
         address account,
         address nftContract,
@@ -31,11 +31,47 @@ library NFTMarketAddress {
         }
     }
 
-    // function requireIsListed(Listing memory item) internal pure {
-    //     if (item.price == 0) {
-    //         revert NFTMarket__ItemNotListed();
-    //     }
-    // }
+    function requireIsListed(Listing memory item) internal pure {
+        if (item.price == 0) {
+            revert NFTMarket__ItemNotListed();
+        }
+    }
+
+    function sendNFT(
+        address from,
+        address to,
+        address nftContract,
+        uint256 tokenId
+    ) internal returns (bytes memory) {
+        (bool success, bytes memory returnData) = nftContract.call(
+            abi.encodeWithSignature(
+                "safeTransferFrom(address,address,uint256)",
+                from,
+                to,
+                tokenId
+            )
+        );
+
+        return verifyCallResult(nftContract, success, returnData);
+    }
+
+    function calculateRoyalty(
+        address nftContract,
+        uint256 tokenId,
+        uint256 price
+    ) internal view returns (bytes memory) {
+        (bool success, bytes memory returnData) = nftContract.staticcall(
+            abi.encodeWithSignature(
+                "royaltyInfo(uint256,uint256)",
+                tokenId,
+                price
+            )
+        );
+
+        if (!success || returnData.length == 0) return "";
+
+        return returnData;
+    }
 
     function isContract(address account) internal view returns (bool) {
         // This method relies on extcodesize/address.code.length, which returns 0
@@ -49,14 +85,14 @@ library NFTMarketAddress {
         address target,
         bool success,
         bytes memory returndata
-    ) internal view returns (bytes memory) {
+    ) private view returns (bytes memory) {
         if (!success) {
-            revert NFTMarket__safeTransferFailed(returndata);
+            revert NFTMarket__CallFailed(returndata);
         }
         if (returndata.length == 0 && !isContract(target)) {
             // only check isContract if the call was successful and the return data is empty
             // otherwise we already know that it was a contract
-            revert NFTMarket__safeTransferFailed(returndata);
+            revert NFTMarket__CallFailed(returndata);
         }
         return returndata;
     }
@@ -70,12 +106,6 @@ abstract contract Modifiers {
         }
         _;
     }
-
-    function requireIsListed(Listing memory item) internal pure {
-        if (item.price == 0) {
-            revert NFTMarket__ItemNotListed();
-        }
-    }
 }
 
 error NFTMarket__NotApprovedForMarketplace();
@@ -83,11 +113,12 @@ error NFTMarket__ItemAlreadyListed();
 error NFTMarket__ItemNotListed();
 error NFTMarket__NotOwner();
 error NFTMarket__PriceNotMet(uint256 msgValue, uint256 price);
-error NFTMarket__NoReentrancy();
+// error NFTMarket__NoReentrancy();
 error NFTMarket__NoProceeds();
 error NFTMarket__FailedTransfer();
 error NFTMarket__ZeroValue();
-error NFTMarket__safeTransferFailed(bytes returndata);
+error NFTMarket__CallFailed(bytes data);
+error NFTMarket__TransferFailed(bytes data);
 
 //library LibNFTMarketplace {
 // function verifyCallResult(

@@ -33,17 +33,19 @@ interface INFTMarketplace {
         uint256 price
     ) external;
 
-    function cancelListing(
-        address nftContract,
-        uint256 tokenId //isOwner(nftAddress, tokenId, msg.sender)
-    ) external;
-
     function buyItem(address nftContract, uint256 tokenId) external payable;
+
+    function withdrawProfits() external returns (bool);
 
     function updatePrice(
         address nftAddress,
         uint256 tokenId,
         uint256 newPrice
+    ) external;
+
+    function cancelListing(
+        address nftContract,
+        uint256 tokenId //isOwner(nftAddress, tokenId, msg.sender)
     ) external;
 
     function getListing(

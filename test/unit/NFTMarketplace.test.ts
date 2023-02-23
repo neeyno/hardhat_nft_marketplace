@@ -15,14 +15,13 @@ if (!developmentChains.includes(network.name)) {
 }
 
 describe("NFt Marketplace unit test", function () {
-    let [deployer, user]: SignerWithAddress[] = []
+    let [deployer, user, buyer]: SignerWithAddress[] = []
     let nftMarketplace: NFTMarketplace
     let royaltyNft: MyRoyaltyNFT
 
     before(async function () {
         const accounts = await ethers.getSigners()
-        deployer = accounts[0]
-        user = accounts[1]
+        ;[deployer, user, buyer] = accounts
     })
 
     beforeEach(async function () {
@@ -313,5 +312,35 @@ describe("NFt Marketplace unit test", function () {
             const userBalance = await ethers.provider.getBalance(user.address)
             expect(userBalance).to.eq(toWei(10000).sub(gasCost))
         }) */
+    })
+
+    describe("Royalty calculation", function () {
+        beforeEach(async function () {
+            await royaltyNft.mintNFT(user.address) // user - royalty recipient
+            await royaltyNft
+                .connect(user)
+                .transferFrom(user.address, deployer.address, 0)
+            await royaltyNft.approve(nftMarketplace.address, 0)
+            await nftMarketplace.listItem(royaltyNft.address, 0, toWei(777)) // deployer - seller
+        })
+
+        it("sets royalty fee to the recipient", async function () {
+            await nftMarketplace
+                .connect(buyer)
+                .buyItem(royaltyNft.address, 0, { value: toWei(777) })
+
+            // user - royalty recipient
+            const recipientProceeds = await nftMarketplace.getProceeds(
+                user.address
+            )
+            // deployer - seller
+            const sellerProceeds = await nftMarketplace.getProceeds(
+                deployer.address
+            )
+            const royaltyAmount = toWei(777).mul(100).div(10000) // 1%
+
+            expect(recipientProceeds).to.eq(royaltyAmount)
+            expect(sellerProceeds).to.eq(toWei(777).sub(royaltyAmount))
+        })
     })
 })

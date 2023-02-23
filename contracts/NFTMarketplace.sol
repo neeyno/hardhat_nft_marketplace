@@ -8,9 +8,10 @@ import {INFTMarketplace} from "./interfaces/INFTMarketplace.sol";
 import "./libraries/LibNFTMarketplace.sol";
 
 contract NFTMarketplace is INFTMarketplace, Modifiers {
-    using NFTMarketAddress for address;
+    using LibNFTMarket for *;
 
     /* State Variables */
+    // uint256 private constant PLATFORM_FEE = 100; // _platformFee 1%
 
     // Mapping from NFT contract address from token ID to Listing
     mapping(address => mapping(uint256 => Listing)) private _listings;
@@ -18,8 +19,11 @@ contract NFTMarketplace is INFTMarketplace, Modifiers {
     // Mapping seller address to amount earned
     mapping(address => uint256) private _proceeds;
 
+    receive() external payable {}
+
     /* External functions */
 
+    // listItem_gC7(address,uint256,uint256): 0x0000db25
     function listItem(
         address nftContract,
         uint256 tokenId,
@@ -43,26 +47,14 @@ contract NFTMarketplace is INFTMarketplace, Modifiers {
         emit ItemListed(msg.sender, nftContract, tokenId, price);
     }
 
-    function cancelListing(
-        address nftContract,
-        uint256 tokenId
-    ) external override {
-        (msg.sender).requireIsOwner(nftContract, tokenId);
-
-        requireIsListed(_listings[nftContract][tokenId]);
-
-        delete (_listings[nftContract][tokenId]);
-
-        emit ItemDelisted(msg.sender, nftContract, tokenId);
-    }
-
+    // buyItem_CcQ(address,uint256): 0x0000c692
     function buyItem(
         address nftContract,
         uint256 tokenId
-    ) external payable override validValue(msg.value) /* noReentrant*/ {
+    ) external payable /* noReentrant*/ {
         Listing memory listedItem = _listings[nftContract][tokenId];
 
-        requireIsListed(listedItem);
+        (listedItem).requireIsListed();
 
         if (msg.value < listedItem.price) {
             revert NFTMarket__PriceNotMet(msg.value, listedItem.price);
@@ -70,60 +62,104 @@ contract NFTMarketplace is INFTMarketplace, Modifiers {
 
         delete _listings[nftContract][tokenId];
 
-        unchecked {
-            _proceeds[listedItem.seller] += msg.value;
-        }
-
-        address(this).requireIsApproved(nftContract, tokenId);
-
-        (bool success, bytes memory returnData) = nftContract.call(
-            abi.encodeWithSignature(
-                "safeTransferFrom(address,address,uint256)",
-                listedItem.seller,
-                msg.sender,
-                tokenId
-            )
+        // calculate Royalty
+        bytes memory royaltyData = nftContract.calculateRoyalty(
+            tokenId,
+            msg.value
         );
 
-        (nftContract).verifyCallResult(success, returnData);
+        if (royaltyData.length != 0) {
+            (address royaltyReceiver, uint256 royaltyAmount) = abi.decode(
+                royaltyData,
+                (address, uint256)
+            );
+
+            if (/* royaltyReceiver != address(0) && */ royaltyAmount != 0) {
+                // Transfer royalty fee to collection owner
+                unchecked {
+                    _proceeds[royaltyReceiver] += royaltyAmount;
+                }
+            }
+
+            // check royalty amount manipulation
+            uint256 sellerTotal = msg.value - royaltyAmount;
+            unchecked {
+                _proceeds[listedItem.seller] += sellerTotal;
+            }
+            //
+        } else {
+            unchecked {
+                _proceeds[listedItem.seller] += msg.value;
+            }
+        }
+
+        // Trasfer NFT from seller
+        address(this).requireIsApproved(nftContract, tokenId);
+        bytes memory resultData = (listedItem.seller).sendNFT(
+            msg.sender,
+            nftContract,
+            tokenId
+        );
 
         emit ItemBought(
             msg.sender,
             nftContract,
             tokenId,
             msg.value,
-            returnData
+            resultData
         );
     }
 
+    function withdrawProfits() external returns (/* noReentrant*/ bool) {
+        uint256 proceeds = _proceeds[msg.sender];
+        if (proceeds == 0) revert NFTMarket__NoProceeds();
+
+        _proceeds[msg.sender] = 0;
+
+        (bool success, bytes memory data) = payable(msg.sender).call{
+            value: proceeds
+        }("");
+
+        if (!success) revert NFTMarket__TransferFailed(data);
+        return success;
+    }
+
+    // updatePrice_yc0(address,uint256,uint256): 0x00003bcb
     function updatePrice(
         address nftContract,
         uint256 tokenId,
         uint256 newPrice
-    ) external override validValue(newPrice) {
+    ) external validValue(newPrice) {
         (msg.sender).requireIsOwner(nftContract, tokenId);
 
-        requireIsListed(_listings[nftContract][tokenId]);
+        (_listings[nftContract][tokenId]).requireIsListed();
 
         _listings[nftContract][tokenId].price = newPrice;
 
         emit ItemListed(msg.sender, nftContract, tokenId, newPrice);
     }
 
+    // cancelListing_R2(address,uint256): 0x0000ff65
+    function cancelListing(address nftContract, uint256 tokenId) external {
+        (msg.sender).requireIsOwner(nftContract, tokenId);
+
+        (_listings[nftContract][tokenId]).requireIsListed();
+
+        delete (_listings[nftContract][tokenId]);
+
+        emit ItemDelisted(msg.sender, nftContract, tokenId);
+    }
+
     function getListing(
         address nftContract,
         uint256 tokenId
-    ) external view override returns (Listing memory) {
+    ) external view returns (Listing memory) {
+        // Listing memory listedItem = _listings[nftContract][tokenId];
+        // (listedItem).requireIsListed();
         return _listings[nftContract][tokenId];
     }
 
-    function getProceeds(
-        address seller
-    ) external view override returns (uint256) {
+    function getProceeds(address seller) external view returns (uint256) {
         return _proceeds[seller];
     }
-
-    // Public visible functions
-    // Internal visible functions
-    // Private visible functions
 }

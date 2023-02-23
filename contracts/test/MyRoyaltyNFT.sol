@@ -8,9 +8,10 @@ import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract MyRoyaltyNFT is ERC2981, ERC721 {
-    using Strings for uint256;
+    using {Base64.encode} for bytes;
+    using {Strings.toString} for uint256;
+    // using {Strings.toHexString} for address;// ?
     using Strings for address;
-    using Base64 for bytes;
 
     string private constant BASE64_jsonPrefix = "data:application/json;base64,";
     string private constant TOKEN_URI =
