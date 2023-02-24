@@ -5,25 +5,26 @@ pragma solidity =0.8.17;
 import {Listing} from "../libraries/LibNFTMarketplace.sol";
 
 interface INFTMarketplace {
-    /* 
-    // Events 
-    */
+    /* Events */
+    /**
+     * @dev Emitted when `nftAddress` `tokenId` token from `seller` with `price` is listed to the marketplace.
+     */
     event ItemListed(
         address indexed seller,
-        address indexed nftAddress,
+        address indexed nftContract,
         uint256 indexed tokenId,
         uint256 price
     );
     event ItemBought(
         address indexed buyer,
-        address indexed nftAddress,
+        address indexed nftContract,
         uint256 indexed tokenId,
         uint256 price,
         bytes returnData
     );
     event ItemDelisted(
         address indexed seller,
-        address indexed nftAddress,
+        address indexed nftContract,
         uint256 indexed tokenId
     );
 
@@ -38,15 +39,12 @@ interface INFTMarketplace {
     function withdrawProfits() external returns (bool);
 
     function updatePrice(
-        address nftAddress,
+        address nftContract,
         uint256 tokenId,
         uint256 newPrice
     ) external;
 
-    function cancelListing(
-        address nftContract,
-        uint256 tokenId //isOwner(nftAddress, tokenId, msg.sender)
-    ) external;
+    function cancelListing(address nftContract, uint256 tokenId) external;
 
     function getListing(
         address nftContract,

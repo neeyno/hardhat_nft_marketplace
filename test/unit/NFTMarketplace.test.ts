@@ -3,7 +3,7 @@ import { expect, assert } from "chai"
 import { ethers, deployments, network } from "hardhat"
 import { developmentChains, networkConfig } from "../../helper-hardhat-config"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { NFTMarketplace, MyRoyaltyNFT } from "../../typechain-types"
+import { NFTMarketplace, MyRoyaltyNFT, SimpleNFT } from "../../typechain-types"
 import { BigNumber, ContractReceipt, ContractTransaction } from "ethers"
 
 const toWei = (value: number): BigNumber =>
@@ -314,7 +314,7 @@ describe("NFt Marketplace unit test", function () {
         }) */
     })
 
-    describe("Royalty calculation", function () {
+    describe("Selling Royalty NFT", function () {
         beforeEach(async function () {
             await royaltyNft.mintNFT(user.address) // user - royalty recipient
             await royaltyNft
@@ -341,6 +341,33 @@ describe("NFt Marketplace unit test", function () {
 
             expect(recipientProceeds).to.eq(royaltyAmount)
             expect(sellerProceeds).to.eq(toWei(777).sub(royaltyAmount))
+        })
+    })
+
+    describe("Selling non Royalty nfts", function () {
+        let simpleNFT: SimpleNFT
+        beforeEach(async function () {
+            await deployments.fixture("SimpleNFT")
+            simpleNFT = await ethers.getContract("SimpleNFT")
+
+            await simpleNFT.mint(user.address) // user - royalty recipient
+
+            await simpleNFT.connect(user).approve(nftMarketplace.address, 0)
+            await nftMarketplace
+                .connect(user)
+                .listItem(simpleNFT.address, 0, toWei(123))
+        })
+
+        it("seller gets full value", async function () {
+            await nftMarketplace
+                .connect(buyer)
+                .buyItem(simpleNFT.address, 0, { value: toWei(123) })
+
+            const sellerProceeds = await nftMarketplace.getProceeds(
+                user.address
+            )
+
+            expect(sellerProceeds).to.eq(toWei(123))
         })
     })
 })

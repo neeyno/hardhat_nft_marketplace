@@ -20,4 +20,4 @@ const deployMyRoyaltyNFT: DeployFunction = async function (
 }
 
 export default deployMyRoyaltyNFT
-deployMyRoyaltyNFT.tags = [`all`, `nft`]
+deployMyRoyaltyNFT.tags = [`all`, `MyRoyaltyNFT`]

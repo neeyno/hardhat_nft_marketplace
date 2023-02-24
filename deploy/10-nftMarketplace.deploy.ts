@@ -20,4 +20,4 @@ const deployNFTMarketplace: DeployFunction = async function (
 }
 
 export default deployNFTMarketplace
-deployNFTMarketplace.tags = [`all`, `market`]
+deployNFTMarketplace.tags = [`all`, `NFTMarketplace`]

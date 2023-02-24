@@ -38,9 +38,12 @@ contract MyRoyaltyNFT is ERC2981, ERC721 {
 
     function mintNFT(address to) external returns (uint256) {
         uint256 newTokenId = _tokenCounter;
-        _tokenCounter = newTokenId + 1;
+        unchecked {
+            _tokenCounter = newTokenId + 1;
+        }
         _safeMint(to, newTokenId);
         _setTokenRoyalty(newTokenId, to, 100); // 100 = 1 % royalty
+
         return newTokenId;
     }
 
