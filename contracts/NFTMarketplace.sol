@@ -1,29 +1,28 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.8.17;
+pragma solidity =0.8.18;
 
 import "hardhat/console.sol";
 
 import {INFTMarketplace} from "./interfaces/INFTMarketplace.sol";
-import "./libraries/LibNFTMarketplace.sol";
+import {LibNFTUtils} from "./libraries/LibNFTUtils.sol";
+import {LibNFTMarket, Modifiers, Listing} from "./libraries/LibNFTMarket.sol";
+import "./libraries/Errors.sol";
 
 contract NFTMarketplace is INFTMarketplace, Modifiers {
+    using LibNFTUtils for address;
     using LibNFTMarket for *;
 
     /* State Variables */
-    // uint256 private constant PLATFORM_FEE = 100; // _platformFee 1%
 
     // Mapping from NFT contract address from token ID to Listing
     mapping(address => mapping(uint256 => Listing)) private _listings;
 
     // Mapping seller address to amount earned
-    mapping(address => uint256) private _proceeds;
-
-    receive() external payable {}
+    mapping(address => uint256) private _profits;
 
     /* External functions */
 
-    // listItem_gC7(address,uint256,uint256): 0x0000db25
     function listItem(
         address nftContract,
         uint256 tokenId,
@@ -47,7 +46,6 @@ contract NFTMarketplace is INFTMarketplace, Modifiers {
         emit ItemListed(msg.sender, nftContract, tokenId, price);
     }
 
-    // buyItem_CcQ(address,uint256): 0x0000c692
     function buyItem(
         address nftContract,
         uint256 tokenId
@@ -63,10 +61,7 @@ contract NFTMarketplace is INFTMarketplace, Modifiers {
         delete _listings[nftContract][tokenId];
 
         // calculate Royalty
-        bytes memory royaltyData = nftContract.calculateRoyalty(
-            tokenId,
-            msg.value
-        );
+        bytes memory royaltyData = nftContract.callRoyalty(tokenId, msg.value);
 
         if (royaltyData.length != 0) {
             (address royaltyReceiver, uint256 royaltyAmount) = abi.decode(
@@ -77,19 +72,19 @@ contract NFTMarketplace is INFTMarketplace, Modifiers {
             if (/* royaltyReceiver != address(0) && */ royaltyAmount != 0) {
                 // Transfer royalty fee to collection owner
                 unchecked {
-                    _proceeds[royaltyReceiver] += royaltyAmount;
+                    _profits[royaltyReceiver] += royaltyAmount;
                 }
             }
 
             // check royalty amount manipulation
             uint256 sellerTotal = msg.value - royaltyAmount;
             unchecked {
-                _proceeds[listedItem.seller] += sellerTotal;
+                _profits[listedItem.seller] += sellerTotal;
             }
             //
         } else {
             unchecked {
-                _proceeds[listedItem.seller] += msg.value;
+                _profits[listedItem.seller] += msg.value;
             }
         }
 
@@ -111,20 +106,19 @@ contract NFTMarketplace is INFTMarketplace, Modifiers {
     }
 
     function withdrawProfits() external returns (/* noReentrant*/ bool) {
-        uint256 proceeds = _proceeds[msg.sender];
-        if (proceeds == 0) revert NFTMarket__NoProceeds();
+        uint256 profits = _profits[msg.sender];
+        if (profits == 0) revert NFTMarket__NoProfits();
 
-        _proceeds[msg.sender] = 0;
+        _profits[msg.sender] = 0;
 
         (bool success, bytes memory data) = payable(msg.sender).call{
-            value: proceeds
+            value: profits
         }("");
 
         if (!success) revert NFTMarket__TransferFailed(data);
         return success;
     }
 
-    // updatePrice_yc0(address,uint256,uint256): 0x00003bcb
     function updatePrice(
         address nftContract,
         uint256 tokenId,
@@ -139,7 +133,6 @@ contract NFTMarketplace is INFTMarketplace, Modifiers {
         emit ItemListed(msg.sender, nftContract, tokenId, newPrice);
     }
 
-    // cancelListing_R2(address,uint256): 0x0000ff65
     function cancelListing(address nftContract, uint256 tokenId) external {
         (msg.sender).requireIsOwner(nftContract, tokenId);
 
@@ -159,7 +152,12 @@ contract NFTMarketplace is INFTMarketplace, Modifiers {
         return _listings[nftContract][tokenId];
     }
 
-    function getProceeds(address seller) external view returns (uint256) {
-        return _proceeds[seller];
+    function getProfits(address seller) external view returns (uint256) {
+        return _profits[seller];
     }
 }
+
+// listItem_gC7(address,uint256,uint256): 0x0000db25
+// buyItem_CcQ(address,uint256): 0x0000c692
+// updatePrice_yc0(address,uint256,uint256): 0x00003bcb
+// cancelListing_R2(address,uint256): 0x0000ff65

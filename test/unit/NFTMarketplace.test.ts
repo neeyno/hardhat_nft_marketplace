@@ -8,9 +8,10 @@ import { BigNumber, ContractReceipt, ContractTransaction } from "ethers"
 
 const toWei = (value: number): BigNumber =>
     ethers.utils.parseEther(value.toString()) // toWei(1) = 10e18 wei
-const fromWei = (value: BigNumber): string => ethers.utils.formatEther(value) // fromWei(10e18) = 1 eth
+const fromWei = (value: BigNumber): string => ethers.utils.formatEther(value) // fromWei(10e18) = "1" eth
 
 if (!developmentChains.includes(network.name)) {
+    console.log("skip unit test")
     describe.skip
 }
 
@@ -226,7 +227,7 @@ describe("NFt Marketplace unit test", function () {
         })
 
         it("sets new proceeds to seller balance", async function () {
-            const proceedsBefore = await nftMarketplace.getProceeds(
+            const proceedsBefore = await nftMarketplace.getProfits(
                 deployer.address
             )
 
@@ -234,7 +235,7 @@ describe("NFt Marketplace unit test", function () {
                 value: toWei(5),
             })
 
-            const proceedsAfter = await nftMarketplace.getProceeds(
+            const proceedsAfter = await nftMarketplace.getProfits(
                 deployer.address
             )
 
@@ -330,11 +331,11 @@ describe("NFt Marketplace unit test", function () {
                 .buyItem(royaltyNft.address, 0, { value: toWei(777) })
 
             // user - royalty recipient
-            const recipientProceeds = await nftMarketplace.getProceeds(
+            const recipientProceeds = await nftMarketplace.getProfits(
                 user.address
             )
             // deployer - seller
-            const sellerProceeds = await nftMarketplace.getProceeds(
+            const sellerProceeds = await nftMarketplace.getProfits(
                 deployer.address
             )
             const royaltyAmount = toWei(777).mul(100).div(10000) // 1%
@@ -363,9 +364,7 @@ describe("NFt Marketplace unit test", function () {
                 .connect(buyer)
                 .buyItem(simpleNFT.address, 0, { value: toWei(123) })
 
-            const sellerProceeds = await nftMarketplace.getProceeds(
-                user.address
-            )
+            const sellerProceeds = await nftMarketplace.getProfits(user.address)
 
             expect(sellerProceeds).to.eq(toWei(123))
         })

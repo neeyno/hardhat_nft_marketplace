@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity =0.8.17;
+pragma solidity =0.8.18;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
@@ -8,32 +8,19 @@ import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract MyRoyaltyNFT is ERC2981, ERC721 {
-    using {Base64.encode} for bytes;
-    using {Strings.toString} for uint256;
-    // using {Strings.toHexString} for address;// ?
+    using Strings for uint256;
     using Strings for address;
+    using Base64 for bytes;
+
+    uint256 private _tokenCounter;
 
     string private constant BASE64_jsonPrefix = "data:application/json;base64,";
     string private constant TOKEN_URI =
         "ipfs://QmSVQf1dxZCLg6N9z19bWWkJxzQaoRJmqiTrfYBi5mbr42";
 
-    uint256 private _tokenCounter;
-
     constructor() ERC721("My Royalty NFT", "MRN") {
         _tokenCounter = 0;
         _setDefaultRoyalty(msg.sender, 5000);
-    }
-
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC2981, ERC721) returns (bool) {
-        // ERC2981 InterfaceId = "0x2a55205a"
-        // ERC721 InterfaceId = "0x80ac58cd"
-        // ERC165 InterfaceId = "0x01ffc9a7"
-        return super.supportsInterface(interfaceId);
     }
 
     function mintNFT(address to) external returns (uint256) {
@@ -70,6 +57,18 @@ contract MyRoyaltyNFT is ERC2981, ERC721 {
                     )
                 ).encode()
             );
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC2981, ERC721) returns (bool) {
+        // ERC2981 InterfaceId = "0x2a55205a"
+        // ERC721 InterfaceId = "0x80ac58cd"
+        // ERC165 InterfaceId = "0x01ffc9a7"
+        return super.supportsInterface(interfaceId);
     }
 
     function getTokenCounter() external view returns (uint256) {

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity =0.8.17;
+pragma solidity =0.8.18;
 
-import {Listing} from "../libraries/LibNFTMarketplace.sol";
+import {Listing} from "../libraries/LibNFTMarket.sol";
 
 interface INFTMarketplace {
     /* Events */
@@ -51,22 +51,5 @@ interface INFTMarketplace {
         uint256 tokenId
     ) external view returns (Listing memory);
 
-    function getProceeds(address seller) external view returns (uint256);
+    function getProfits(address seller) external view returns (uint256);
 }
-
-/* 
-interface INFTMarketplaceInternal {
-    error NFTMarket__NotApprovedForMarketplace();
-    error NFTMarket__ItemAlreadyListed();
-    error NFTMarket__ItemNotListed();
-    error NFTMarket__NotOwner();
-    error NFTMarket__PriceNotMet(uint256 msgValue, uint256 price);
-    error NFTMarket__NoReentrancy();
-    error NFTMarket__NoProceeds();
-    error NFTMarket__FailedTransfer();
-    error NFTMarket__ZeroValue();
-    error NFTMarket__safeTransferFailed(bytes returndata);
-}
-
-interface INFTMarketplaceBase is INFTMarketplaceInternal, INFTMarketplace {}
- */
