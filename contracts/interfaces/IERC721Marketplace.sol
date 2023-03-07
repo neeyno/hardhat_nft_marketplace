@@ -1,55 +1,54 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 
-pragma solidity =0.8.18;
+pragma solidity ^0.8.18;
 
-import {Listing} from "../libraries/LibNFTMarket.sol";
+import {Listing721} from "../libraries/LibAppStorage.sol";
 
-interface INFTMarketplace {
-    /* Events */
+interface IERC721Marketplace {
+    // Events
     /**
      * @dev Emitted when `nftAddress` `tokenId` token from `seller` with `price` is listed to the marketplace.
      */
-    event ItemListed(
+    event ERC721ItemListed(
         address indexed seller,
         address indexed nftContract,
         uint256 indexed tokenId,
         uint256 price
     );
-    event ItemBought(
+    event ERC721ItemBought(
         address indexed buyer,
         address indexed nftContract,
         uint256 indexed tokenId,
         uint256 price,
         bytes returnData
     );
-    event ItemDelisted(
+    event ERC721ItemDelisted(
         address indexed seller,
         address indexed nftContract,
         uint256 indexed tokenId
     );
 
-    function listItem(
+    function listERC721Item(
         address nftContract,
         uint256 tokenId,
         uint256 price
     ) external;
 
-    function buyItem(address nftContract, uint256 tokenId) external payable;
+    function buyERC721Item(
+        address nftContract,
+        uint256 tokenId
+    ) external payable;
 
-    function withdrawProfits() external returns (bool);
-
-    function updatePrice(
+    function updateERC721Price(
         address nftContract,
         uint256 tokenId,
         uint256 newPrice
     ) external;
 
-    function cancelListing(address nftContract, uint256 tokenId) external;
+    function cancelERC721Listing(address nftContract, uint256 tokenId) external;
 
-    function getListing(
+    function getERC721Listing(
         address nftContract,
         uint256 tokenId
-    ) external view returns (Listing memory);
-
-    function getProfits(address seller) external view returns (uint256);
+    ) external view returns (Listing721 memory);
 }

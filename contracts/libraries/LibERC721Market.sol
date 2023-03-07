@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.8.18;
+pragma solidity ^0.8.18;
 
 import {IERC721} from "../interfaces/IERC721.sol";
-import {Listing} from "./LibAppStorage.sol";
+import {Listing721} from "./LibAppStorage.sol";
 import "./Errors.sol";
 
-library LibNFTMarket {
+library LibERC721Market {
     function requireIsOwner(
         address account,
         address nftContract,
@@ -27,20 +27,10 @@ library LibNFTMarket {
         }
     }
 
-    function requireIsListed(Listing memory item) internal pure {
+    function requireIsListed(Listing721 memory item) internal pure {
         if (item.price == 0) {
             revert NFTMarket__ItemNotListed();
         }
-    }
-}
-
-abstract contract Modifiers {
-    /* Modifiers */
-    modifier validValue(uint256 value) {
-        if (value == 0) {
-            revert NFTMarket__ZeroValue();
-        }
-        _;
     }
 }
 

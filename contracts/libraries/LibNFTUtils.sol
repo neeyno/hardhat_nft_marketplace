@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.8.18;
+pragma solidity ^0.8.18;
 
 import "./Errors.sol";
 
@@ -17,6 +17,27 @@ library LibNFTUtils {
                 from,
                 to,
                 tokenId
+            )
+        );
+
+        return verifyCallResult(nftContract, success, returnData);
+    }
+
+    function sendNFT(
+        address from,
+        address to,
+        address nftContract,
+        uint256 tokenId,
+        uint256 quantity
+    ) internal returns (bytes memory) {
+        (bool success, bytes memory returnData) = nftContract.call(
+            abi.encodeWithSignature(
+                "safeTransferFrom(address,address,uint256,uint256,bytes",
+                from,
+                to,
+                tokenId,
+                quantity,
+                ""
             )
         );
 
@@ -41,7 +62,7 @@ library LibNFTUtils {
         return returnData;
     }
 
-    function isContract(address account) internal view returns (bool) {
+    function isContract(address account) private view returns (bool) {
         // This method relies on extcodesize/address.code.length, which returns 0
         // for contracts in construction, since the code is only stored at the end
         // of the constructor execution.
@@ -63,5 +84,15 @@ library LibNFTUtils {
             revert NFTMarket__CallFailed(returndata);
         }
         return returndata;
+    }
+}
+
+abstract contract Modifiers {
+    // Modifiers
+    modifier validValue(uint256 value) {
+        if (value == 0) {
+            revert NFTMarket__ZeroValue();
+        }
+        _;
     }
 }

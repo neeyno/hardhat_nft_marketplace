@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.8.18;
+pragma solidity ^0.8.18;
 
 error NFTMarket__NotApprovedForMarketplace();
 error NFTMarket__ItemAlreadyListed();
 error NFTMarket__ItemNotListed();
 error NFTMarket__NotOwner();
+error NFTMarket__InsufficientBalance();
+error NFTMarket__InsufficientQuantity(); //(uint256 quantity, uint256 avaliable);
 error NFTMarket__PriceNotMet(uint256 msgValue, uint256 price);
+error NFTMarket__ZeroValue();
+
 error NFTMarket__NoProfits();
 error NFTMarket__FailedTransfer();
-error NFTMarket__ZeroValue();
 error NFTMarket__CallFailed(bytes data);
 error NFTMarket__TransferFailed(bytes data);
