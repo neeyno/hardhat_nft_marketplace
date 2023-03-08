@@ -10,8 +10,7 @@ error NFTMarket__InsufficientBalance();
 error NFTMarket__InsufficientQuantity(); //(uint256 quantity, uint256 avaliable);
 error NFTMarket__PriceNotMet(uint256 msgValue, uint256 price);
 error NFTMarket__ZeroValue();
+error NFTMarket__CallFailed(bytes data);
 
 error NFTMarket__NoProfits();
-error NFTMarket__FailedTransfer();
-error NFTMarket__CallFailed(bytes data);
 error NFTMarket__TransferFailed(bytes data);

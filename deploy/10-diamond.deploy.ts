@@ -3,14 +3,14 @@ import { DeployFunction } from "hardhat-deploy/types"
 
 import { getNamedAccounts, deployments } from "hardhat"
 
-const deploySimpleNFT: DeployFunction = async function (
+const deployDiamond: DeployFunction = async function (
     hre: HardhatRuntimeEnvironment
 ) {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
 
-    const nftMarket = await deploy("SimpleNFT", {
-        contract: "SimpleNFT",
+    const nftMarket = await deploy("NFTMarketDiamond", {
+        contract: "NFTMarketDiamond",
         from: deployer,
         log: true,
         args: [],
@@ -19,5 +19,5 @@ const deploySimpleNFT: DeployFunction = async function (
     log(`----------------------------------------------------`)
 }
 
-export default deploySimpleNFT
-deploySimpleNFT.tags = [`all`, `SimpleNFT`, `erc721`]
+export default deployDiamond
+deployDiamond.tags = [`all`, `diamond`]

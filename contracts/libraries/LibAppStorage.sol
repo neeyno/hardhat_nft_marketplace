@@ -28,10 +28,10 @@ library AppStorage {
         mapping(address => uint256) profits;
     }
 
-    function layout() internal pure returns (StorageLayout storage s) {
+    function layout() internal pure returns (StorageLayout storage sl) {
         bytes32 slot = STORAGE_SLOT;
         assembly {
-            s.slot := slot
+            sl.slot := slot
         }
     }
 }

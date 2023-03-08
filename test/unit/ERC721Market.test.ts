@@ -3,8 +3,13 @@ import { expect, assert } from "chai"
 import { ethers, deployments, network } from "hardhat"
 import { developmentChains, networkConfig } from "../../helper-hardhat-config"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { NFTMarketplace, MyRoyaltyNFT, SimpleNFT } from "../../typechain-types"
 import { BigNumber, ContractReceipt, ContractTransaction } from "ethers"
+import {
+    NFTMarketBase,
+    MyRoyaltyNFT,
+    SimpleNFT,
+    ERC721Marketplace,
+} from "../../typechain-types"
 
 const toWei = (value: number): BigNumber =>
     ethers.utils.parseEther(value.toString()) // toWei(1) = 10e18 wei
@@ -15,10 +20,11 @@ if (!developmentChains.includes(network.name)) {
     describe.skip
 }
 
-describe("NFt Marketplace unit test", function () {
+describe("ERC721 Marketplace unit test", function () {
     let [deployer, user, buyer]: SignerWithAddress[] = []
-    let nftMarketplace: NFTMarketplace
+    let erc721market: ERC721Marketplace
     let royaltyNft: MyRoyaltyNFT
+    let market: NFTMarketBase
 
     before(async function () {
         const accounts = await ethers.getSigners()
@@ -27,37 +33,44 @@ describe("NFt Marketplace unit test", function () {
 
     beforeEach(async function () {
         await deployments.fixture("all")
-        nftMarketplace = await ethers.getContract("NFTMarketplace")
+        const diamond = await ethers.getContract("NFTMarketDiamond")
+
+        market = await ethers.getContractAt("NFTMarketBase", diamond.address)
+
+        erc721market = await ethers.getContractAt(
+            "ERC721Marketplace",
+            diamond.address
+        )
         royaltyNft = await ethers.getContract("MyRoyaltyNFT")
     })
 
-    describe("Item listng - listItem()", function () {
+    describe("Item listng - listERC721Item()", function () {
         beforeEach(async function () {
             await royaltyNft.mintNFT(deployer.address) // mints nft with tokenId: 0
-            await royaltyNft.approve(nftMarketplace.address, 0)
+            await royaltyNft.approve(erc721market.address, 0)
         })
 
         it("reverts if item is not approved", async function () {
             await royaltyNft.mintNFT(user.address) // mints nft tokenId: 1
 
             await expect(
-                nftMarketplace
+                erc721market
                     .connect(user)
-                    .listItem(royaltyNft.address, 1, toWei(1))
+                    .listERC721Item(royaltyNft.address, 1, toWei(1))
             ).to.be.revertedWithCustomError(
-                nftMarketplace,
+                erc721market,
                 "NFTMarket__NotApprovedForMarketplace"
             )
         })
 
         it("checks that item hasn't been listed yet", async function () {
-            await nftMarketplace.listItem(royaltyNft.address, 0, toWei(1))
+            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(1))
 
             // try to list the same nft twice
             await expect(
-                nftMarketplace.listItem(royaltyNft.address, 0, toWei(1))
+                erc721market.listERC721Item(royaltyNft.address, 0, toWei(1))
             ).to.be.revertedWithCustomError(
-                nftMarketplace,
+                erc721market,
                 "NFTMarket__ItemAlreadyListed"
             )
         })
@@ -65,27 +78,24 @@ describe("NFt Marketplace unit test", function () {
         it("checks the owner of the item", async function () {
             // try to list tokenId 1 from user acc
             await expect(
-                nftMarketplace
+                erc721market
                     .connect(user)
-                    .listItem(royaltyNft.address, 0, toWei(1))
-            ).to.be.revertedWithCustomError(
-                nftMarketplace,
-                "NFTMarket__NotOwner"
-            )
+                    .listERC721Item(royaltyNft.address, 0, toWei(1))
+            ).to.be.revertedWithCustomError(erc721market, "NFTMarket__NotOwner")
         })
 
         it("reverts if the price parameter is 0", async function () {
             await expect(
-                nftMarketplace.listItem(royaltyNft.address, 0, toWei(0))
+                erc721market.listERC721Item(royaltyNft.address, 0, toWei(0))
             ).to.be.revertedWithCustomError(
-                nftMarketplace,
+                erc721market,
                 "NFTMarket__ZeroValue"
             )
         })
 
         it("sets a new item to the marketplace listing", async function () {
-            await nftMarketplace.listItem(royaltyNft.address, 0, toWei(1))
-            const { seller, price } = await nftMarketplace.getListing(
+            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(1))
+            const { seller, price } = await erc721market.getERC721Listing(
                 royaltyNft.address,
                 0
             )
@@ -94,47 +104,44 @@ describe("NFt Marketplace unit test", function () {
             expect(seller).to.equal(deployer.address)
         })
 
-        it("emits event - ItemListed", async function () {
+        it("emits event - ERC721ItemListed", async function () {
             await expect(
-                nftMarketplace.listItem(royaltyNft.address, 0, toWei(99))
+                erc721market.listERC721Item(royaltyNft.address, 0, toWei(99))
             )
-                .to.emit(nftMarketplace, "ItemListed")
+                .to.emit(erc721market, "ERC721ItemListed")
                 .withArgs(deployer.address, royaltyNft.address, 0, toWei(99))
         })
     })
 
-    describe("Canceling listing - cancelListing()", function () {
+    describe("Canceling listing - cancelERC721Listing()", function () {
         beforeEach(async function () {
             await royaltyNft.mintNFT(deployer.address)
-            await royaltyNft.approve(nftMarketplace.address, 0)
-            await nftMarketplace.listItem(royaltyNft.address, 0, toWei(2))
+            await royaltyNft.approve(erc721market.address, 0)
+            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(2))
         })
 
         it("only owner able to cancel the listing", async function () {
             await expect(
-                nftMarketplace
+                erc721market
                     .connect(user)
-                    .cancelListing(royaltyNft.address, 0)
-            ).to.be.revertedWithCustomError(
-                nftMarketplace,
-                "NFTMarket__NotOwner"
-            )
+                    .cancelERC721Listing(royaltyNft.address, 0)
+            ).to.be.revertedWithCustomError(erc721market, "NFTMarket__NotOwner")
         })
 
         it("checks that item is listed on the marketplace", async function () {
             await royaltyNft.mintNFT(deployer.address) // tokenId 1
 
             await expect(
-                nftMarketplace.cancelListing(royaltyNft.address, 1)
+                erc721market.cancelERC721Listing(royaltyNft.address, 1)
             ).to.be.revertedWithCustomError(
-                nftMarketplace,
+                erc721market,
                 "NFTMarket__ItemNotListed"
             )
         })
 
         it("removes item from the listing", async function () {
-            await nftMarketplace.cancelListing(royaltyNft.address, 0)
-            const { price, seller } = await nftMarketplace.getListing(
+            await erc721market.cancelERC721Listing(royaltyNft.address, 0)
+            const { price, seller } = await erc721market.getERC721Listing(
                 royaltyNft.address,
                 0
             )
@@ -143,81 +150,87 @@ describe("NFt Marketplace unit test", function () {
             expect(seller).to.equals(ethers.constants.AddressZero)
         })
 
-        it("emits event - ItemDelisted", async function () {
-            await expect(nftMarketplace.cancelListing(royaltyNft.address, 0))
-                .to.emit(nftMarketplace, "ItemDelisted")
+        it("emits event - ERC721ItemDelisted", async function () {
+            await expect(
+                erc721market.cancelERC721Listing(royaltyNft.address, 0)
+            )
+                .to.emit(erc721market, "ERC721ItemDelisted")
                 .withArgs(deployer.address, royaltyNft.address, 0)
         })
     })
 
-    describe("Update listing price - updatePrice()", function () {
+    describe("Update listing price - updateERC721Price()", function () {
         beforeEach(async function () {
             await royaltyNft.mintNFT(deployer.address)
-            await royaltyNft.approve(nftMarketplace.address, 0)
-            await nftMarketplace.listItem(royaltyNft.address, 0, toWei(3))
+            await royaltyNft.approve(erc721market.address, 0)
+            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(3))
         })
 
         it("updates listing price with new value", async function () {
             const { price: priceBefore, seller: sellerBefore } =
-                await nftMarketplace.getListing(royaltyNft.address, 0)
+                await erc721market.getERC721Listing(royaltyNft.address, 0)
 
-            await nftMarketplace.updatePrice(royaltyNft.address, 0, toWei(4))
-
-            const { price: newPrice, seller } = await nftMarketplace.getListing(
+            await erc721market.updateERC721Price(
                 royaltyNft.address,
-                0
+                0,
+                toWei(4)
             )
+
+            const { price: newPrice, seller } =
+                await erc721market.getERC721Listing(royaltyNft.address, 0)
 
             expect(priceBefore).to.eq(toWei(3))
             expect(newPrice).to.eq(toWei(4))
             expect(seller).to.eq(sellerBefore)
         })
 
-        it("emits event on price update - ItemListed", async function () {
+        it("emits event on price update - ERC721ItemListed", async function () {
             await expect(
-                nftMarketplace.updatePrice(royaltyNft.address, 0, toWei(4))
+                erc721market.updateERC721Price(royaltyNft.address, 0, toWei(4))
             )
-                .to.emit(nftMarketplace, "ItemListed")
+                .to.emit(erc721market, "ERC721ItemListed")
                 .withArgs(deployer.address, royaltyNft.address, 0, toWei(4))
         })
     })
 
-    describe("Buying item - buyItem()", function () {
+    describe("Buying item - buyERC721Item()", function () {
         beforeEach(async function () {
             await royaltyNft.mintNFT(deployer.address)
-            await royaltyNft.approve(nftMarketplace.address, 0)
-            await nftMarketplace.listItem(royaltyNft.address, 0, toWei(5))
+            await royaltyNft.approve(erc721market.address, 0)
+            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(5))
         })
 
         it("checks that item is listed on the marketplace", async function () {
             await expect(
-                nftMarketplace.buyItem(royaltyNft.address, 2, {
+                erc721market.buyERC721Item(royaltyNft.address, 2, {
                     value: toWei(0.1),
                 })
             ).to.be.revertedWithCustomError(
-                nftMarketplace,
+                erc721market,
                 "NFTMarket__ItemNotListed"
             )
         })
 
         it("checks price matching", async function () {
             await expect(
-                nftMarketplace.buyItem(royaltyNft.address, 0, {
+                erc721market.buyERC721Item(royaltyNft.address, 0, {
                     value: toWei(0.99),
                 })
             )
                 .to.be.revertedWithCustomError(
-                    nftMarketplace,
+                    erc721market,
                     "NFTMarket__PriceNotMet"
                 )
                 .withArgs(toWei(0.99), toWei(5))
         })
 
         it("removes bought item from the listing", async function () {
-            await nftMarketplace.connect(user).buyItem(royaltyNft.address, 0, {
-                value: toWei(5),
-            })
-            const { price, seller } = await nftMarketplace.getListing(
+            await erc721market
+                .connect(user)
+                .buyERC721Item(royaltyNft.address, 0, {
+                    value: toWei(5),
+                })
+            const { price, seller } = await erc721market.getERC721Listing(
                 royaltyNft.address,
                 0
             )
@@ -227,58 +240,62 @@ describe("NFt Marketplace unit test", function () {
         })
 
         it("sets new proceeds to seller balance", async function () {
-            const proceedsBefore = await nftMarketplace.getProfits(
-                deployer.address
-            )
+            const proceedsBefore = await market.getProfits(deployer.address)
 
-            await nftMarketplace.connect(user).buyItem(royaltyNft.address, 0, {
-                value: toWei(5),
-            })
+            await erc721market
+                .connect(user)
+                .buyERC721Item(royaltyNft.address, 0, {
+                    value: toWei(5),
+                })
 
-            const proceedsAfter = await nftMarketplace.getProfits(
-                deployer.address
-            )
+            const proceedsAfter = await market.getProfits(deployer.address)
 
             expect(proceedsBefore).to.eq(0)
             expect(proceedsAfter).to.eq(toWei(5))
         })
 
         it("transfers item to the buyer", async function () {
-            await nftMarketplace.connect(user).buyItem(royaltyNft.address, 0, {
-                value: toWei(5),
-            })
+            await erc721market
+                .connect(user)
+                .buyERC721Item(royaltyNft.address, 0, {
+                    value: toWei(5),
+                })
             const newOwner = await royaltyNft.ownerOf(0)
 
             expect(newOwner).to.eq(user.address)
         })
 
-        it("emits event - ItemBought", async function () {
+        it("emits event - ERC721ItemBought", async function () {
             await expect(
-                nftMarketplace.connect(user).buyItem(royaltyNft.address, 0, {
-                    value: toWei(5),
-                })
+                erc721market
+                    .connect(user)
+                    .buyERC721Item(royaltyNft.address, 0, {
+                        value: toWei(5),
+                    })
             )
-                .to.emit(nftMarketplace, "ItemBought")
+                .to.emit(erc721market, "ERC721ItemBought")
                 .withArgs(user.address, royaltyNft.address, 0, toWei(5), "0x")
         })
     })
 
-    describe("tx fails if seller removes approval  - buyItem()", function () {
+    describe("tx fails if seller removes approval  - buyERC721Item()", function () {
         beforeEach(async function () {
             await royaltyNft.mintNFT(deployer.address)
-            await royaltyNft.approve(nftMarketplace.address, 0)
-            await nftMarketplace.listItem(royaltyNft.address, 0, toWei(6))
+            await royaltyNft.approve(erc721market.address, 0)
+            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(6))
         })
 
         it("reverts with custom error - NotApproved", async function () {
             await royaltyNft.approve(ethers.constants.AddressZero, 0)
 
             await expect(
-                nftMarketplace.connect(user).buyItem(royaltyNft.address, 0, {
-                    value: toWei(6),
-                })
+                erc721market
+                    .connect(user)
+                    .buyERC721Item(royaltyNft.address, 0, {
+                        value: toWei(6),
+                    })
             ).to.be.revertedWithCustomError(
-                nftMarketplace,
+                erc721market,
                 "NFTMarket__NotApprovedForMarketplace"
             )
         })
@@ -291,9 +308,9 @@ describe("NFt Marketplace unit test", function () {
                 (await ethers.provider.getBalance(user.address)).toString()
             )
             try {
-                tx = await nftMarketplace
+                tx = await erc721market
                     .connect(user)
-                    .buyItem(royaltyNft.address, 0, {
+                    .buyERC721Item(royaltyNft.address, 0, {
                         value: toWei(6),
                     })
             } catch (error) {
@@ -321,23 +338,19 @@ describe("NFt Marketplace unit test", function () {
             await royaltyNft
                 .connect(user)
                 .transferFrom(user.address, deployer.address, 0)
-            await royaltyNft.approve(nftMarketplace.address, 0)
-            await nftMarketplace.listItem(royaltyNft.address, 0, toWei(777)) // deployer - seller
+            await royaltyNft.approve(erc721market.address, 0)
+            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(777)) // deployer - seller
         })
 
         it("sets royalty fee to the recipient", async function () {
-            await nftMarketplace
+            await erc721market
                 .connect(buyer)
-                .buyItem(royaltyNft.address, 0, { value: toWei(777) })
+                .buyERC721Item(royaltyNft.address, 0, { value: toWei(777) })
 
             // user - royalty recipient
-            const recipientProceeds = await nftMarketplace.getProfits(
-                user.address
-            )
+            const recipientProceeds = await market.getProfits(user.address)
             // deployer - seller
-            const sellerProceeds = await nftMarketplace.getProfits(
-                deployer.address
-            )
+            const sellerProceeds = await market.getProfits(deployer.address)
             const royaltyAmount = toWei(777).mul(100).div(10000) // 1%
 
             expect(recipientProceeds).to.eq(royaltyAmount)
@@ -353,18 +366,18 @@ describe("NFt Marketplace unit test", function () {
 
             await simpleNFT.mint(user.address) // user - royalty recipient
 
-            await simpleNFT.connect(user).approve(nftMarketplace.address, 0)
-            await nftMarketplace
+            await simpleNFT.connect(user).approve(erc721market.address, 0)
+            await erc721market
                 .connect(user)
-                .listItem(simpleNFT.address, 0, toWei(123))
+                .listERC721Item(simpleNFT.address, 0, toWei(123))
         })
 
         it("seller gets full value", async function () {
-            await nftMarketplace
+            await erc721market
                 .connect(buyer)
-                .buyItem(simpleNFT.address, 0, { value: toWei(123) })
+                .buyERC721Item(simpleNFT.address, 0, { value: toWei(123) })
 
-            const sellerProceeds = await nftMarketplace.getProfits(user.address)
+            const sellerProceeds = await market.getProfits(user.address)
 
             expect(sellerProceeds).to.eq(toWei(123))
         })

@@ -10,7 +10,7 @@ import {AppStorage, Listing1155} from "../libraries/LibAppStorage.sol";
 import {LibERC1155Market as Lib} from "../libraries/LibERC1155Market.sol";
 import "../libraries/Errors.sol";
 
-abstract contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
+contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
     using LibNFTUtils for address;
 
     // External functions
@@ -71,10 +71,12 @@ abstract contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
             revert NFTMarket__PriceNotMet(msg.value, totalPrice);
         }
 
-        if (quantity > listedItem.quantity)
+        if (quantity > listedItem.quantity) {
             revert NFTMarket__InsufficientQuantity();
+        }
 
         uint256 remainingQuantity = listedItem.quantity - quantity;
+
         if (remainingQuantity == 0) {
             delete sl.listings1155[nftContract][tokenId];
         } else {
@@ -112,7 +114,7 @@ abstract contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         // Trasfer NFT from seller
         Lib.requireIsApprovedForAll(msg.sender, address(this), nftContract);
 
-        bytes memory resultData = (listedItem.seller).sendNFT(
+        bytes memory resultData = (listedItem.seller).sendNFTs(
             msg.sender,
             nftContract,
             tokenId,

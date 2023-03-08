@@ -10,12 +10,12 @@ import {AppStorage, Listing721} from "../libraries/LibAppStorage.sol";
 import {LibERC721Market as Lib} from "../libraries/LibERC721Market.sol";
 import "../libraries/Errors.sol";
 
-abstract contract ERC721Marketplace is IERC721Marketplace, Modifiers {
+contract ERC721Marketplace is IERC721Marketplace, Modifiers {
     using LibNFTUtils for address;
 
     //External functions
 
-    function listItem721(
+    function listERC721Item(
         address nftContract,
         uint256 tokenId,
         uint256 price
@@ -43,7 +43,10 @@ abstract contract ERC721Marketplace is IERC721Marketplace, Modifiers {
         emit ERC721ItemListed(msg.sender, nftContract, tokenId, price);
     }
 
-    function buyItem(address nftContract, uint256 tokenId) external payable {
+    function buyERC721Item(
+        address nftContract,
+        uint256 tokenId
+    ) external payable {
         AppStorage.StorageLayout storage sl = AppStorage.layout();
         Listing721 memory listedItem = sl.listings721[nftContract][tokenId];
 
@@ -100,7 +103,7 @@ abstract contract ERC721Marketplace is IERC721Marketplace, Modifiers {
         );
     }
 
-    function updatePrice(
+    function updateERC721Price(
         address nftContract,
         uint256 tokenId,
         uint256 newPrice
@@ -116,7 +119,10 @@ abstract contract ERC721Marketplace is IERC721Marketplace, Modifiers {
         emit ERC721ItemListed(msg.sender, nftContract, tokenId, newPrice);
     }
 
-    function cancelListing(address nftContract, uint256 tokenId) external {
+    function cancelERC721Listing(
+        address nftContract,
+        uint256 tokenId
+    ) external {
         Lib.requireIsOwner(msg.sender, nftContract, tokenId);
 
         Lib.requireIsListed(
@@ -128,7 +134,7 @@ abstract contract ERC721Marketplace is IERC721Marketplace, Modifiers {
         emit ERC721ItemDelisted(msg.sender, nftContract, tokenId);
     }
 
-    function getListing721(
+    function getERC721Listing(
         address nftContract,
         uint256 tokenId
     ) external view returns (Listing721 memory) {

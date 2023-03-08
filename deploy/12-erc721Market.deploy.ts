@@ -3,14 +3,14 @@ import { DeployFunction } from "hardhat-deploy/types"
 
 import { getNamedAccounts, deployments } from "hardhat"
 
-const deployNFTMarketplace: DeployFunction = async function (
+const deployERC721Marketplace: DeployFunction = async function (
     hre: HardhatRuntimeEnvironment
 ) {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
 
-    const nftMarket = await deploy("NFTMarketplace", {
-        contract: "NFTMarketplace",
+    const nftMarket = await deploy("ERC721Marketplace", {
+        contract: "ERC721Marketplace",
         from: deployer,
         log: true,
         args: [],
@@ -19,5 +19,5 @@ const deployNFTMarketplace: DeployFunction = async function (
     log(`----------------------------------------------------`)
 }
 
-export default deployNFTMarketplace
-deployNFTMarketplace.tags = [`all`, `NFTMarketplace`]
+export default deployERC721Marketplace
+deployERC721Marketplace.tags = [`all`, `ERC721Marketplace`]

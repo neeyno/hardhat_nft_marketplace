@@ -23,7 +23,7 @@ library LibNFTUtils {
         return verifyCallResult(nftContract, success, returnData);
     }
 
-    function sendNFT(
+    function sendNFTs(
         address from,
         address to,
         address nftContract,
@@ -71,14 +71,14 @@ library LibNFTUtils {
     }
 
     function verifyCallResult(
-        address target,
+        address account,
         bool success,
         bytes memory returndata
     ) private view returns (bytes memory) {
         if (!success) {
             revert NFTMarket__CallFailed(returndata);
         }
-        if (returndata.length == 0 && !isContract(target)) {
+        if (returndata.length == 0 && !isContract(account)) {
             // only check isContract if the call was successful and the return data is empty
             // otherwise we already know that it was a contract
             revert NFTMarket__CallFailed(returndata);

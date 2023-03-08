@@ -49,8 +49,7 @@ interface IERC1155Marketplace {
 
     function cancelERC1155Listing(
         address nftContract,
-        uint256 tokenId,
-        uint256 quantity
+        uint256 tokenId
     ) external;
 
     function getERC1155Listing(
