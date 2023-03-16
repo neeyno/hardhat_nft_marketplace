@@ -86,13 +86,3 @@ library LibNFTUtils {
         return returndata;
     }
 }
-
-abstract contract Modifiers {
-    // Modifiers
-    modifier validValue(uint256 value) {
-        if (value == 0) {
-            revert NFTMarket__ZeroValue();
-        }
-        _;
-    }
-}

@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.18;
 
-import {Listing1155} from "../libraries/LibAppStorage.sol";
-
 interface IERC1155Marketplace {
     event ERC1155ItemListed(
         address indexed seller,
@@ -51,9 +49,4 @@ interface IERC1155Marketplace {
         address nftContract,
         uint256 tokenId
     ) external;
-
-    function getERC1155Listing(
-        address nftContract,
-        uint256 tokenId
-    ) external view returns (Listing1155 memory);
 }

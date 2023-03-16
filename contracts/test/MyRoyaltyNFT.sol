@@ -67,7 +67,9 @@ contract MyRoyaltyNFT is ERC2981, ERC721 {
     ) public view override(ERC2981, ERC721) returns (bool) {
         // ERC2981 InterfaceId = "0x2a55205a"
         // ERC721 InterfaceId = "0x80ac58cd"
+        // ERC721Metadata InterfaceId = "0x5b5e139f"
         // ERC165 InterfaceId = "0x01ffc9a7"
+        // interfaceId == type(IERC2981).interfaceId || super.supportsInterface(interfaceId)
         return super.supportsInterface(interfaceId);
     }
 

@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.18;
 
+import "./Errors.sol";
+
 // ERC721 Listing type
 struct Listing721 {
     address seller;
@@ -21,11 +23,11 @@ library AppStorage {
 
     struct StorageLayout {
         // Mapping from NFT contract address from token ID to Listing
-        mapping(address => mapping(uint256 => Listing721)) listings721;
+        mapping(address nftContract => mapping(uint256 tokenId => Listing721)) listings721;
         // Mapping from NFT contract address from token ID to Listing
-        mapping(address => mapping(uint256 => Listing1155)) listings1155;
+        mapping(address nftContract => mapping(uint256 tokenId => Listing1155)) listings1155;
         // Mapping seller address to amount earned
-        mapping(address => uint256) profits;
+        mapping(address account => uint256 balance) profits;
     }
 
     function layout() internal pure returns (StorageLayout storage sl) {
@@ -33,5 +35,15 @@ library AppStorage {
         assembly {
             sl.slot := slot
         }
+    }
+}
+
+abstract contract Modifiers {
+    // Modifiers
+    modifier validValue(uint256 value) {
+        if (value == 0) {
+            revert NFTMarket__ZeroValue();
+        }
+        _;
     }
 }

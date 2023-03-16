@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.18;
 
-import {Listing721} from "../libraries/LibAppStorage.sol";
-
 interface IERC721Marketplace {
     // Events
     /**
@@ -46,9 +44,4 @@ interface IERC721Marketplace {
     ) external;
 
     function cancelERC721Listing(address nftContract, uint256 tokenId) external;
-
-    function getERC721Listing(
-        address nftContract,
-        uint256 tokenId
-    ) external view returns (Listing721 memory);
 }

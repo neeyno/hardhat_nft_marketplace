@@ -1,4 +1,3 @@
-// import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { expect } from "chai"
 import { ethers, deployments, network } from "hardhat"
 import { developmentChains, networkConfig } from "../../helper-hardhat-config"
@@ -8,7 +7,7 @@ import {
     NFTMarketBase,
     MyRoyaltyNFT,
     SimpleNFT,
-    ERC721Marketplace,
+    ERC1155Marketplace,
 } from "../../typechain-types"
 
 const toWei = (value: number): BigNumber =>
@@ -20,9 +19,9 @@ if (!developmentChains.includes(network.name)) {
     describe.skip
 }
 
-describe("ERC721 Marketplace unit test", function () {
+describe("ERC1155 Marketplace unit test", function () {
     let [deployer, user, buyer]: SignerWithAddress[] = []
-    let erc721market: ERC721Marketplace
+    let erc1155market: ERC1155Marketplace
     let royaltyNft: MyRoyaltyNFT
     let market: NFTMarketBase
 
@@ -37,8 +36,8 @@ describe("ERC721 Marketplace unit test", function () {
 
         market = await ethers.getContractAt("NFTMarketBase", diamond.address)
 
-        erc721market = await ethers.getContractAt(
-            "ERC721Marketplace",
+        erc1155market = await ethers.getContractAt(
+            "ERC1155Marketplace",
             diamond.address
         )
         royaltyNft = await ethers.getContract("MyRoyaltyNFT")

@@ -165,40 +165,4 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
 
         emit ERC1155ItemDelisted(msg.sender, nftContract, tokenId);
     }
-
-    function getERC1155Listing(
-        address nftContract,
-        uint256 tokenId
-    ) external view returns (Listing1155 memory) {
-        return AppStorage.layout().listings1155[nftContract][tokenId];
-    }
 }
-
-/* 
-    function withdrawProfits() external returns (bool) { 
-        uint256 profits = AppStorage.layout().profits[msg.sender];
-        if (profits == 0) revert NFTMarket__NoProfits();
-
-        AppStorage.layout().profits[msg.sender] = 0;
-
-        (bool success, bytes memory data) = payable(msg.sender).call{
-            value: profits
-        }("");
-
-        if (!success) revert NFTMarket__TransferFailed(data);
-        return success;
-    }
-
-    function getListing(
-        address nftContract,
-        uint256 tokenId
-    ) external view returns (Listing memory) {
-        // Listing memory listedItem = _listings[nftContract][tokenId];
-        // (listedItem).requireIsListed();
-        return _listings[nftContract][tokenId];
-    }
-
-    function getProfits(address seller) external view returns (uint256) {
-        return _profits[seller];
-    } 
-    */

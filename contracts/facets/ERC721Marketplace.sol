@@ -133,13 +133,4 @@ contract ERC721Marketplace is IERC721Marketplace, Modifiers {
 
         emit ERC721ItemDelisted(msg.sender, nftContract, tokenId);
     }
-
-    function getERC721Listing(
-        address nftContract,
-        uint256 tokenId
-    ) external view returns (Listing721 memory) {
-        // Listing memory listedItem = _listings[nftContract][tokenId];
-        // (listedItem).requireIsListed();
-        return AppStorage.layout().listings721[nftContract][tokenId];
-    }
 }
