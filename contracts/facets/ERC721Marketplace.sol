@@ -4,10 +4,10 @@ pragma solidity =0.8.18;
 
 //import "hardhat/console.sol";
 
+import {IERC721} from "../interfaces/IERC721.sol";
 import {IERC721Marketplace} from "../interfaces/IERC721Marketplace.sol";
-import {LibNFTUtils, Modifiers} from "../libraries/LibNFTUtils.sol";
-import {AppStorage, Listing721} from "../libraries/LibAppStorage.sol";
-import {LibERC721Market as Lib} from "../libraries/LibERC721Market.sol";
+import {LibNFTUtils} from "../libraries/LibNFTUtils.sol";
+import {AppStorage, Listing721, Modifiers} from "../libraries/LibAppStorage.sol";
 import "../libraries/Errors.sol";
 
 contract ERC721Marketplace is IERC721Marketplace, Modifiers {
@@ -20,10 +20,10 @@ contract ERC721Marketplace is IERC721Marketplace, Modifiers {
         uint256 tokenId,
         uint256 price
     ) external validValue(price) {
-        Lib.requireIsOwner(msg.sender, nftContract, tokenId);
+        _requireIsOwner(msg.sender, nftContract, tokenId);
 
         // check item is approved for the marketplace
-        Lib.requireIsApproved(address(this), nftContract, tokenId);
+        _requireIsApproved(address(this), nftContract, tokenId);
 
         Listing721 memory listing = AppStorage.layout().listings721[
             nftContract
@@ -50,7 +50,7 @@ contract ERC721Marketplace is IERC721Marketplace, Modifiers {
         AppStorage.StorageLayout storage sl = AppStorage.layout();
         Listing721 memory listedItem = sl.listings721[nftContract][tokenId];
 
-        Lib.requireIsListed(listedItem);
+        _requireIsListed(listedItem);
 
         if (msg.value < listedItem.price) {
             revert NFTMarket__PriceNotMet(msg.value, listedItem.price);
@@ -86,8 +86,9 @@ contract ERC721Marketplace is IERC721Marketplace, Modifiers {
             }
         }
 
+        // _requireIsApproved(address(this), nftContract, tokenId);
+
         // Trasfer NFT from seller
-        Lib.requireIsApproved(address(this), nftContract, tokenId);
         bytes memory resultData = (listedItem.seller).sendNFT(
             msg.sender,
             nftContract,
@@ -108,11 +109,9 @@ contract ERC721Marketplace is IERC721Marketplace, Modifiers {
         uint256 tokenId,
         uint256 newPrice
     ) external validValue(newPrice) {
-        Lib.requireIsOwner(msg.sender, nftContract, tokenId);
+        _requireIsOwner(msg.sender, nftContract, tokenId);
 
-        Lib.requireIsListed(
-            AppStorage.layout().listings721[nftContract][tokenId]
-        );
+        _requireIsListed(AppStorage.layout().listings721[nftContract][tokenId]);
 
         AppStorage.layout().listings721[nftContract][tokenId].price = newPrice;
 
@@ -123,14 +122,38 @@ contract ERC721Marketplace is IERC721Marketplace, Modifiers {
         address nftContract,
         uint256 tokenId
     ) external {
-        Lib.requireIsOwner(msg.sender, nftContract, tokenId);
+        _requireIsOwner(msg.sender, nftContract, tokenId);
 
-        Lib.requireIsListed(
-            AppStorage.layout().listings721[nftContract][tokenId]
-        );
+        _requireIsListed(AppStorage.layout().listings721[nftContract][tokenId]);
 
         delete (AppStorage.layout().listings721[nftContract][tokenId]);
 
         emit ERC721ItemDelisted(msg.sender, nftContract, tokenId);
+    }
+
+    function _requireIsOwner(
+        address account,
+        address nftContract,
+        uint256 tokenId
+    ) private view {
+        if (IERC721(nftContract).ownerOf(tokenId) != account) {
+            revert NFTMarket__NotOwner();
+        }
+    }
+
+    function _requireIsApproved(
+        address target,
+        address nftContract,
+        uint256 tokenId
+    ) private view {
+        if (IERC721(nftContract).getApproved(tokenId) != target) {
+            revert NFTMarket__NotApprovedForMarketplace();
+        }
+    }
+
+    function _requireIsListed(Listing721 memory item) private pure {
+        if (item.price == 0) {
+            revert NFTMarket__ItemNotListed();
+        }
     }
 }

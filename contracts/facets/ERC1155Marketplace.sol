@@ -4,32 +4,30 @@ pragma solidity =0.8.18;
 
 //import "hardhat/console.sol";
 
+import {IERC1155} from "../interfaces/IERC1155.sol";
 import {IERC1155Marketplace} from "../interfaces/IERC1155Marketplace.sol";
-import {LibNFTUtils, Modifiers} from "../libraries/LibNFTUtils.sol";
-import {AppStorage, Listing1155} from "../libraries/LibAppStorage.sol";
-import {LibERC1155Market as Lib} from "../libraries/LibERC1155Market.sol";
+import {LibNFTUtils} from "../libraries/LibNFTUtils.sol";
+import {AppStorage, Listing1155, Modifiers} from "../libraries/LibAppStorage.sol";
 import "../libraries/Errors.sol";
 
 contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
     using LibNFTUtils for address;
 
     // External functions
+
+    // erc1155 - rewrite previous listing if it is already listed
     function listERC1155Item(
         address nftContract,
         uint256 tokenId,
         uint256 quantity,
         uint256 price
     ) external validValue(quantity) validValue(price) {
-        Lib.requireSufficientBalance(
-            msg.sender,
-            nftContract,
-            tokenId,
-            quantity
-        );
+        _requireSufficientBalance(msg.sender, nftContract, tokenId, quantity);
 
         // check item is approved for the marketplace
-        Lib.requireIsApprovedForAll(msg.sender, address(this), nftContract);
+        _requireIsApprovedForAll(msg.sender, address(this), nftContract);
 
+        /* 
         Listing1155 memory listing = AppStorage.layout().listings1155[
             nftContract
         ][tokenId];
@@ -37,7 +35,8 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         // check item is not listed
         if (listing.price > 0 || listing.seller != address(0)) {
             revert NFTMarket__ItemAlreadyListed();
-        }
+        } 
+        */
 
         // create new item for the listing
         AppStorage.layout().listings1155[nftContract][tokenId] = Listing1155(
@@ -63,7 +62,7 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         AppStorage.StorageLayout storage sl = AppStorage.layout();
         Listing1155 memory listedItem = sl.listings1155[nftContract][tokenId];
 
-        Lib.requireIsListed(listedItem.price);
+        _requireIsListed(listedItem.price);
 
         uint256 totalPrice = listedItem.price * quantity;
 
@@ -112,8 +111,6 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         }
 
         // Trasfer NFT from seller
-        Lib.requireIsApprovedForAll(msg.sender, address(this), nftContract);
-
         bytes memory resultData = (listedItem.seller).sendNFTs(
             msg.sender,
             nftContract,
@@ -140,9 +137,9 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
             nftContract
         ][tokenId];
 
-        Lib.requireIsOwner(msg.sender, listedItem.seller);
+        _requireIsOwner(msg.sender, listedItem.seller);
 
-        Lib.requireIsListed(listedItem.price);
+        _requireIsListed(listedItem.price);
 
         AppStorage.layout().listings1155[nftContract][tokenId].price = newPrice;
 
@@ -157,12 +154,45 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
             nftContract
         ][tokenId];
 
-        Lib.requireIsOwner(msg.sender, listedItem.seller);
+        _requireIsOwner(msg.sender, listedItem.seller);
 
-        Lib.requireIsListed(listedItem.price);
+        // _requireIsListed(listedItem.price);
 
         delete (AppStorage.layout().listings1155[nftContract][tokenId]);
 
         emit ERC1155ItemDelisted(msg.sender, nftContract, tokenId);
+    }
+
+    function _requireSufficientBalance(
+        address account,
+        address nftContract,
+        uint256 tokenId,
+        uint256 quantity
+    ) private view {
+        if (IERC1155(nftContract).balanceOf(account, tokenId) < quantity) {
+            revert NFTMarket__InsufficientBalance();
+        }
+    }
+
+    function _requireIsApprovedForAll(
+        address account,
+        address operator,
+        address nftContract
+    ) private view {
+        if (IERC1155(nftContract).isApprovedForAll(account, operator) != true) {
+            revert NFTMarket__NotApprovedForMarketplace();
+        }
+    }
+
+    function _requireIsOwner(address account, address seller) private pure {
+        if (account != seller) {
+            revert NFTMarket__NotOwner();
+        }
+    }
+
+    function _requireIsListed(uint256 price) private pure {
+        if (price == 0) {
+            revert NFTMarket__ItemNotListed();
+        }
     }
 }

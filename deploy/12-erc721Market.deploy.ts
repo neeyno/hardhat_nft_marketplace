@@ -20,4 +20,4 @@ const deployERC721Marketplace: DeployFunction = async function (
 }
 
 export default deployERC721Marketplace
-deployERC721Marketplace.tags = [`all`, `ERC721Marketplace`]
+deployERC721Marketplace.tags = [`all`, `ERC721Marketplace`, `erc721`]

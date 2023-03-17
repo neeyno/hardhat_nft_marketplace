@@ -5,14 +5,14 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { BigNumber } from "ethers"
 import {
     NFTMarketBase,
-    MyRoyaltyNFT,
-    SimpleNFT,
     ERC1155Marketplace,
+    SimpleNFT1155,
+    RoyaltiNFT1155,
+    SimpleNFT__factory,
 } from "../../typechain-types"
 
-const toWei = (value: number): BigNumber =>
-    ethers.utils.parseEther(value.toString()) // toWei(1) = 10e18 wei
-const fromWei = (value: BigNumber): string => ethers.utils.formatEther(value) // fromWei(10e18) = "1" eth
+const toWei = (value: number) => ethers.utils.parseEther(value.toString()) // toWei(1) = 10e18 wei
+const fromWei = (value: BigNumber) => ethers.utils.formatEther(value) // fromWei(10e18) = "1" eth
 
 if (!developmentChains.includes(network.name)) {
     console.log("skip unit test")
@@ -22,7 +22,8 @@ if (!developmentChains.includes(network.name)) {
 describe("ERC1155 Marketplace unit test", function () {
     let [deployer, user, buyer]: SignerWithAddress[] = []
     let erc1155market: ERC1155Marketplace
-    let royaltyNft: MyRoyaltyNFT
+    let royaltyNft: RoyaltiNFT1155
+    let simpleNFT: SimpleNFT1155
     let market: NFTMarketBase
 
     before(async function () {
@@ -31,7 +32,7 @@ describe("ERC1155 Marketplace unit test", function () {
     })
 
     beforeEach(async function () {
-        await deployments.fixture("all")
+        await deployments.fixture(["diamond", "base", "erc1155"])
         const diamond = await ethers.getContract("NFTMarketDiamond")
 
         market = await ethers.getContractAt("NFTMarketBase", diamond.address)
@@ -40,278 +41,441 @@ describe("ERC1155 Marketplace unit test", function () {
             "ERC1155Marketplace",
             diamond.address
         )
-        royaltyNft = await ethers.getContract("MyRoyaltyNFT")
+
+        // royaltyNft = await ethers.getContract("RoyaltiNFT1155")
+        simpleNFT = await ethers.getContract("SimpleNFT1155")
     })
 
-    describe("Item listng - listERC721Item()", function () {
+    describe("Item listng - listERC1155Item()", function () {
         beforeEach(async function () {
-            await royaltyNft.mintNFT(deployer.address) // mints nft with tokenId: 0
-            await royaltyNft.approve(erc721market.address, 0)
-        })
+            // mints nft with tokenId: 0 and amount: 10
+            await simpleNFT.mint(deployer.address, 0, 10, "0x")
 
-        it("reverts if item is not approved", async function () {
-            await royaltyNft.mintNFT(user.address) // mints nft tokenId: 1
-
-            await expect(
-                erc721market
-                    .connect(user)
-                    .listERC721Item(royaltyNft.address, 1, toWei(1))
-            ).to.be.revertedWithCustomError(
-                erc721market,
-                "NFTMarket__NotApprovedForMarketplace"
-            )
-        })
-
-        it("checks that item hasn't been listed yet", async function () {
-            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(1))
-
-            // try to list the same nft twice
-            await expect(
-                erc721market.listERC721Item(royaltyNft.address, 0, toWei(1))
-            ).to.be.revertedWithCustomError(
-                erc721market,
-                "NFTMarket__ItemAlreadyListed"
-            )
-        })
-
-        it("checks the owner of the item", async function () {
-            // try to list tokenId 1 from user acc
-            await expect(
-                erc721market
-                    .connect(user)
-                    .listERC721Item(royaltyNft.address, 0, toWei(1))
-            ).to.be.revertedWithCustomError(erc721market, "NFTMarket__NotOwner")
+            // approve nft for the marketplace
+            await simpleNFT.setApprovalForAll(market.address, true)
         })
 
         it("reverts if the price parameter is 0", async function () {
             await expect(
-                erc721market.listERC721Item(royaltyNft.address, 0, toWei(0))
+                erc1155market.listERC1155Item(
+                    simpleNFT.address,
+                    0,
+                    10,
+                    toWei(0)
+                )
             ).to.be.revertedWithCustomError(
-                erc721market,
+                erc1155market,
                 "NFTMarket__ZeroValue"
             )
         })
 
+        it("reverts if the quantity parameter is 0", async function () {
+            await expect(
+                erc1155market.listERC1155Item(
+                    simpleNFT.address,
+                    0,
+                    0, // 0 quantity
+                    toWei(1)
+                )
+            ).to.be.revertedWithCustomError(
+                erc1155market,
+                "NFTMarket__ZeroValue"
+            )
+        })
+
+        it("reverts if item is not approved", async function () {
+            await simpleNFT.mint(user.address, 0, 1, "0x")
+
+            await expect(
+                erc1155market
+                    .connect(user)
+                    .listERC1155Item(simpleNFT.address, 0, 1, toWei(1))
+            ).to.be.revertedWithCustomError(
+                erc1155market,
+                "NFTMarket__NotApprovedForMarketplace"
+            )
+        })
+
+        it("checks seller balance and ownership", async function () {
+            await expect(
+                erc1155market.listERC1155Item(
+                    simpleNFT.address,
+                    0,
+                    11,
+                    toWei(1)
+                )
+            ).to.be.revertedWithCustomError(
+                erc1155market,
+                "NFTMarket__InsufficientBalance"
+            )
+        })
+
+        it("rewtite existing listing", async function () {
+            await erc1155market.listERC1155Item(
+                simpleNFT.address,
+                0,
+                1,
+                toWei(1)
+            )
+        })
+        it("allows to revoke some quantity ", async function () {})
+
+        /* it("checks the owner of the item", async function () {
+            // try to list tokenId 1 from user acc
+            await expect(
+                erc1155market
+                    .connect(user)
+                    .listERC1155Item(simpleNFT.address, 0, toWei(1))
+            ).to.be.revertedWithCustomError(
+                erc1155market,
+                "NFTMarket__NotOwner"
+            )
+        }) */
+
         it("sets a new item to the marketplace listing", async function () {
-            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(1))
-            const { seller, price } = await market.getERC721Listing(
-                royaltyNft.address,
+            await erc1155market.listERC1155Item(
+                simpleNFT.address,
+                0,
+                10,
+                toWei(1)
+            )
+            const { seller, price, quantity } = await market.getERC1155Listing(
+                simpleNFT.address,
                 0
             )
 
-            expect(price).to.equal(toWei(1))
             expect(seller).to.equal(deployer.address)
+            expect(price).to.equal(toWei(1))
+            expect(quantity).to.equal(10)
         })
 
-        it("emits event - ERC721ItemListed", async function () {
+        it("emits event - ERC1155ItemListed", async function () {
             await expect(
-                erc721market.listERC721Item(royaltyNft.address, 0, toWei(99))
+                erc1155market.listERC1155Item(
+                    simpleNFT.address,
+                    0,
+                    10,
+                    toWei(0.99)
+                )
             )
-                .to.emit(erc721market, "ERC721ItemListed")
-                .withArgs(deployer.address, royaltyNft.address, 0, toWei(99))
+                .to.emit(erc1155market, "ERC1155ItemListed")
+                .withArgs(
+                    deployer.address,
+                    simpleNFT.address,
+                    0,
+                    10,
+                    toWei(0.99)
+                )
         })
     })
 
-    describe("Canceling listing - cancelERC721Listing()", function () {
+    describe("Canceling listing - cancelERC1155Listing()", function () {
         beforeEach(async function () {
-            await royaltyNft.mintNFT(deployer.address)
-            await royaltyNft.approve(erc721market.address, 0)
-            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(2))
+            // mints nft with tokenId: 0 and amount: 10
+            await simpleNFT.mint(deployer.address, 0, 10, "0x")
+
+            // approve nft for the marketplace
+            await simpleNFT.setApprovalForAll(market.address, true)
+
+            // list item to the marketplace
+            await erc1155market.listERC1155Item(
+                simpleNFT.address,
+                0,
+                10,
+                toWei(2)
+            )
         })
 
         it("only owner able to cancel the listing", async function () {
             await expect(
-                erc721market
+                erc1155market
                     .connect(user)
-                    .cancelERC721Listing(royaltyNft.address, 0)
-            ).to.be.revertedWithCustomError(erc721market, "NFTMarket__NotOwner")
-        })
-
-        it("checks that item is listed on the marketplace", async function () {
-            await royaltyNft.mintNFT(deployer.address) // tokenId 1
-
-            await expect(
-                erc721market.cancelERC721Listing(royaltyNft.address, 1)
+                    .cancelERC1155Listing(simpleNFT.address, 0)
             ).to.be.revertedWithCustomError(
-                erc721market,
-                "NFTMarket__ItemNotListed"
+                erc1155market,
+                "NFTMarket__NotOwner"
             )
         })
 
+        /* it("checks that item is listed on the marketplace", async function () {
+            await simpleNFT.mint(deployer.address, 1, 10, "0x") // tokenId 1
+
+            await expect(
+                erc1155market.cancelERC1155Listing(simpleNFT.address, 1)
+            ).to.be.revertedWithCustomError(
+                erc1155market,
+                "NFTMarket__ItemNotListed"
+            )
+        }) */
+
         it("removes item from the listing", async function () {
-            await erc721market.cancelERC721Listing(royaltyNft.address, 0)
-            const { price, seller } = await market.getERC721Listing(
-                royaltyNft.address,
+            await erc1155market.cancelERC1155Listing(simpleNFT.address, 0)
+            const { price, seller, quantity } = await market.getERC1155Listing(
+                simpleNFT.address,
                 0
             )
 
             expect(price).to.equals(0)
             expect(seller).to.equals(ethers.constants.AddressZero)
+            expect(quantity).to.equals(0)
         })
 
-        it("emits event - ERC721ItemDelisted", async function () {
+        it("emits event - ERC1155ItemDelisted", async function () {
             await expect(
-                erc721market.cancelERC721Listing(royaltyNft.address, 0)
+                erc1155market.cancelERC1155Listing(simpleNFT.address, 0)
             )
-                .to.emit(erc721market, "ERC721ItemDelisted")
-                .withArgs(deployer.address, royaltyNft.address, 0)
+                .to.emit(erc1155market, "ERC1155ItemDelisted")
+                .withArgs(deployer.address, simpleNFT.address, 0)
         })
     })
 
-    describe("Update listing price - updateERC721Price()", function () {
+    describe("Update listing price - updateERC1155Price()", function () {
         beforeEach(async function () {
-            await royaltyNft.mintNFT(deployer.address)
-            await royaltyNft.approve(erc721market.address, 0)
-            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(3))
+            // mints nft with tokenId: 0 and amount: 10
+            await simpleNFT.mint(deployer.address, 0, 10, "0x")
+
+            // approve nft for the marketplace
+            await simpleNFT.setApprovalForAll(market.address, true)
+
+            // list item to the marketplace
+            await erc1155market.listERC1155Item(
+                simpleNFT.address,
+                0,
+                10,
+                toWei(3)
+            )
+        })
+
+        it("only owner able to update the listing", async function () {
+            await expect(
+                erc1155market
+                    .connect(user)
+                    .updateERC1155Price(simpleNFT.address, 0, toWei(4))
+            ).to.be.revertedWithCustomError(
+                erc1155market,
+                "NFTMarket__NotOwner"
+            )
         })
 
         it("updates listing price with new value", async function () {
-            const { price: priceBefore, seller: sellerBefore } =
-                await market.getERC721Listing(royaltyNft.address, 0)
+            const {
+                price: priceBefore,
+                seller: sellerBefore,
+                quantity: QuantityBefore,
+            } = await market.getERC1155Listing(simpleNFT.address, 0)
 
-            await erc721market.updateERC721Price(
-                royaltyNft.address,
+            await erc1155market.updateERC1155Price(
+                simpleNFT.address,
                 0,
                 toWei(4)
             )
 
-            const { price: newPrice, seller } = await market.getERC721Listing(
-                royaltyNft.address,
-                0
-            )
+            const {
+                price: newPrice,
+                seller,
+                quantity,
+            } = await market.getERC1155Listing(simpleNFT.address, 0)
 
             expect(priceBefore).to.eq(toWei(3))
             expect(newPrice).to.eq(toWei(4))
             expect(seller).to.eq(sellerBefore)
+            expect(quantity).to.eq(QuantityBefore)
         })
 
-        it("emits event on price update - ERC721ItemListed", async function () {
+        it("emits event on price update - ERC1155ItemListed", async function () {
             await expect(
-                erc721market.updateERC721Price(royaltyNft.address, 0, toWei(4))
+                erc1155market.updateERC1155Price(simpleNFT.address, 0, toWei(4))
             )
-                .to.emit(erc721market, "ERC721ItemListed")
-                .withArgs(deployer.address, royaltyNft.address, 0, toWei(4))
+                .to.emit(erc1155market, "ERC1155ItemListed")
+                .withArgs(deployer.address, simpleNFT.address, 0, 0, toWei(4))
         })
     })
 
-    describe("Buying item - buyERC721Item()", function () {
+    describe("Buying item - buyERC1155Item()", function () {
         beforeEach(async function () {
-            await royaltyNft.mintNFT(deployer.address)
-            await royaltyNft.approve(erc721market.address, 0)
-            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(5))
+            // mints nft with tokenId: 0 and amount: 10
+            await simpleNFT.mint(deployer.address, 0, 2, "0x")
+
+            // approve nft for the marketplace
+            await simpleNFT.setApprovalForAll(market.address, true)
+
+            // list item to the marketplace
+            await erc1155market.listERC1155Item(
+                simpleNFT.address,
+                0,
+                2,
+                toWei(5)
+            )
         })
 
         it("checks that item is listed on the marketplace", async function () {
             await expect(
-                erc721market.buyERC721Item(royaltyNft.address, 2, {
+                erc1155market.buyERC1155Item(simpleNFT.address, 2, 1, {
                     value: toWei(0.1),
                 })
             ).to.be.revertedWithCustomError(
-                erc721market,
+                erc1155market,
                 "NFTMarket__ItemNotListed"
             )
         })
 
         it("checks price matching", async function () {
             await expect(
-                erc721market.buyERC721Item(royaltyNft.address, 0, {
-                    value: toWei(0.99),
-                })
+                erc1155market
+                    .connect(buyer)
+                    .buyERC1155Item(simpleNFT.address, 0, 2, {
+                        value: toWei(9.99),
+                    })
             )
                 .to.be.revertedWithCustomError(
-                    erc721market,
+                    erc1155market,
                     "NFTMarket__PriceNotMet"
                 )
-                .withArgs(toWei(0.99), toWei(5))
+                .withArgs(toWei(9.99), toWei(10))
         })
 
         it("removes bought item from the listing", async function () {
-            await erc721market
-                .connect(user)
-                .buyERC721Item(royaltyNft.address, 0, {
-                    value: toWei(5),
+            await erc1155market
+                .connect(buyer)
+                .buyERC1155Item(simpleNFT.address, 0, 2, {
+                    value: toWei(10),
                 })
-            const { price, seller } = await market.getERC721Listing(
-                royaltyNft.address,
+
+            const { price, seller, quantity } = await market.getERC1155Listing(
+                simpleNFT.address,
                 0
             )
 
             expect(price).to.eq(0)
             expect(seller).to.eq(ethers.constants.AddressZero)
+            expect(quantity).to.eq(0)
         })
 
         it("sets new proceeds to seller balance", async function () {
             const proceedsBefore = await market.getProfits(deployer.address)
 
-            await erc721market
-                .connect(user)
-                .buyERC721Item(royaltyNft.address, 0, {
-                    value: toWei(5),
+            await erc1155market
+                .connect(buyer)
+                .buyERC1155Item(simpleNFT.address, 0, 2, {
+                    value: toWei(10),
                 })
 
             const proceedsAfter = await market.getProfits(deployer.address)
 
             expect(proceedsBefore).to.eq(0)
-            expect(proceedsAfter).to.eq(toWei(5))
+            expect(proceedsAfter).to.eq(toWei(10))
         })
 
         it("transfers item to the buyer", async function () {
-            await erc721market
-                .connect(user)
-                .buyERC721Item(royaltyNft.address, 0, {
-                    value: toWei(5),
-                })
-            const newOwner = await royaltyNft.ownerOf(0)
+            const buyerBalanceBefore = await simpleNFT.balanceOf(
+                buyer.address,
+                0
+            )
 
-            expect(newOwner).to.eq(user.address)
+            await erc1155market
+                .connect(buyer)
+                .buyERC1155Item(simpleNFT.address, 0, 2, {
+                    value: toWei(10),
+                })
+            const buyerBalanceAfter = await simpleNFT.balanceOf(
+                buyer.address,
+                0
+            )
+
+            expect(buyerBalanceBefore).to.eq(0)
+            expect(buyerBalanceAfter).to.eq(2)
         })
 
-        it("emits event - ERC721ItemBought", async function () {
+        it("emits event - ERC1155ItemBought", async function () {
             await expect(
-                erc721market
-                    .connect(user)
-                    .buyERC721Item(royaltyNft.address, 0, {
-                        value: toWei(5),
+                erc1155market
+                    .connect(buyer)
+                    .buyERC1155Item(simpleNFT.address, 0, 2, {
+                        value: toWei(10),
                     })
             )
-                .to.emit(erc721market, "ERC721ItemBought")
-                .withArgs(user.address, royaltyNft.address, 0, toWei(5), "0x")
+                .to.emit(erc1155market, "ERC1155ItemBought")
+                .withArgs(
+                    buyer.address,
+                    simpleNFT.address,
+                    0,
+                    2,
+                    toWei(10),
+                    "0x"
+                )
         })
+        /* 
+        it("reverts if seller revokes approval", async function () {
+            await simpleNFT.setApprovalForAll(market.address, false)
+
+            let descr = new ethers.utils.Interface(SimpleNFT__factory.abi)
+
+            // const errorMsg:[] = await erc1155market.interface.errors()
+            const abiCoder = new ethers.utils.AbiCoder()
+
+            const errorSelector = descr.getSighash(
+                "safeTransferFrom(address,address,uint256,uint256,bytes)"
+            )
+            // const errorSelector = descr.getError(["ERC1155: caller is not token owner or approved"])
+
+            console.log(errorSelector)
+            const errorMsg = abiCoder.encode(
+                ["bytes4", "string"],
+                [
+                    errorSelector,
+                    "ERC1155: caller is not token owner or approved",
+                ]
+            )
+
+            await expect(
+                erc1155market
+                    .connect(buyer)
+                    .buyERC1155Item(simpleNFT.address, 0, 2, {
+                        value: toWei(10),
+                    })
+            )
+                .to.be.revertedWithCustomError(
+                    erc1155market,
+                    "NFTMarket__NFTTransferFailed"
+                )
+                .withArgs(errorMsg)
+        }) */
     })
 
+    /* 
     describe("tx fails if seller removes approval  - buyERC721Item()", function () {
         beforeEach(async function () {
-            await royaltyNft.mintNFT(deployer.address)
-            await royaltyNft.approve(erc721market.address, 0)
-            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(6))
+            await simpleNFT.mint(deployer.address)
+            await simpleNFT.approve(erc1155market.address, 0)
+            await erc1155market.listERC1155Item(simpleNFT.address, 0, toWei(6))
         })
 
         it("reverts with custom error - NotApproved", async function () {
-            await royaltyNft.approve(ethers.constants.AddressZero, 0)
+            await simpleNFT.approve(ethers.constants.AddressZero, 0)
 
             await expect(
-                erc721market
+                erc1155market
                     .connect(user)
-                    .buyERC721Item(royaltyNft.address, 0, {
+                    .buyERC721Item(simpleNFT.address, 0, {
                         value: toWei(6),
                     })
             ).to.be.revertedWithCustomError(
-                erc721market,
+                erc1155market,
                 "NFTMarket__NotApprovedForMarketplace"
             )
         })
-        /* 
+        
         let tx: unknown
 
         it("restores user balance", async function () {
-            await royaltyNft.approve(ethers.constants.AddressZero, 0)
+            await simpleNFT.approve(ethers.constants.AddressZero, 0)
             console.log(
                 (await ethers.provider.getBalance(user.address)).toString()
             )
             try {
-                tx = await erc721market
+                tx = await erc1155market
                     .connect(user)
-                    .buyERC721Item(royaltyNft.address, 0, {
+                    .buyERC721Item(simpleNFT.address, 0, {
                         value: toWei(6),
                     })
             } catch (error) {
@@ -330,23 +494,30 @@ describe("ERC1155 Marketplace unit test", function () {
             const gasCost = gasUsed.mul(effectiveGasPrice)
             const userBalance = await ethers.provider.getBalance(user.address)
             expect(userBalance).to.eq(toWei(10000).sub(gasCost))
-        }) */
+        }) 
+        
     })
+    */
 
+    /* 
     describe("Selling Royalty NFT", function () {
         beforeEach(async function () {
-            await royaltyNft.mintNFT(user.address) // user - royalty recipient
+            await simpleNFT.mint(user.address) // user - royalty recipient
             await royaltyNft
                 .connect(user)
                 .transferFrom(user.address, deployer.address, 0)
-            await royaltyNft.approve(erc721market.address, 0)
-            await erc721market.listERC721Item(royaltyNft.address, 0, toWei(777)) // deployer - seller
+            await simpleNFT.approve(erc1155market.address, 0)
+            await erc1155market.listERC1155Item(
+                simpleNFT.address,
+                0,
+                toWei(777)
+            ) // deployer - seller
         })
 
         it("sets royalty fee to the recipient", async function () {
-            await erc721market
+            await erc1155market
                 .connect(buyer)
-                .buyERC721Item(royaltyNft.address, 0, { value: toWei(777) })
+                .buyERC721Item(simpleNFT.address, 0, { value: toWei(777) })
 
             // user - royalty recipient
             const recipientProceeds = await market.getProfits(user.address)
@@ -360,21 +531,21 @@ describe("ERC1155 Marketplace unit test", function () {
     })
 
     describe("Selling non Royalty nfts", function () {
-        let simpleNFT: SimpleNFT
+        let simpleNFT: SimpleNFT1155
         beforeEach(async function () {
             await deployments.fixture("SimpleNFT")
             simpleNFT = await ethers.getContract("SimpleNFT")
 
             await simpleNFT.mint(user.address) // user - royalty recipient
 
-            await simpleNFT.connect(user).approve(erc721market.address, 0)
-            await erc721market
+            await simpleNFT.connect(user).approve(erc1155market.address, 0)
+            await erc1155market
                 .connect(user)
-                .listERC721Item(simpleNFT.address, 0, toWei(123))
+                .listERC1155Item(simpleNFT.address, 0, toWei(123))
         })
 
         it("seller gets full value", async function () {
-            await erc721market
+            await erc1155market
                 .connect(buyer)
                 .buyERC721Item(simpleNFT.address, 0, { value: toWei(123) })
 
@@ -382,5 +553,6 @@ describe("ERC1155 Marketplace unit test", function () {
 
             expect(sellerProceeds).to.eq(toWei(123))
         })
-    })
+    }) 
+    */
 })

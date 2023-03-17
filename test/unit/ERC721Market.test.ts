@@ -11,9 +11,8 @@ import {
     ERC721Marketplace,
 } from "../../typechain-types"
 
-const toWei = (value: number): BigNumber =>
-    ethers.utils.parseEther(value.toString()) // toWei(1) = 10e18 wei
-const fromWei = (value: BigNumber): string => ethers.utils.formatEther(value) // fromWei(10e18) = "1" eth
+const toWei = (value: number) => ethers.utils.parseEther(value.toString()) // toWei(1) = 10e18 wei
+const fromWei = (value: BigNumber) => ethers.utils.formatEther(value) // fromWei(10e18) = "1" eth
 
 if (!developmentChains.includes(network.name)) {
     console.log("skip unit test")
@@ -24,6 +23,7 @@ describe("ERC721 Marketplace unit test", function () {
     let [deployer, user, buyer]: SignerWithAddress[] = []
     let erc721market: ERC721Marketplace
     let royaltyNft: MyRoyaltyNFT
+    let simpleNFT: SimpleNFT
     let market: NFTMarketBase
 
     before(async function () {
@@ -32,7 +32,7 @@ describe("ERC721 Marketplace unit test", function () {
     })
 
     beforeEach(async function () {
-        await deployments.fixture("all")
+        await deployments.fixture(["diamond", "base", "erc721"])
         const diamond = await ethers.getContract("NFTMarketDiamond")
 
         market = await ethers.getContractAt("NFTMarketBase", diamond.address)
@@ -287,7 +287,7 @@ describe("ERC721 Marketplace unit test", function () {
             await erc721market.listERC721Item(royaltyNft.address, 0, toWei(6))
         })
 
-        it("reverts with custom error - NotApproved", async function () {
+        it("reverts with custom error", async function () {
             await royaltyNft.approve(ethers.constants.AddressZero, 0)
 
             await expect(
@@ -298,7 +298,7 @@ describe("ERC721 Marketplace unit test", function () {
                     })
             ).to.be.revertedWithCustomError(
                 erc721market,
-                "NFTMarket__NotApprovedForMarketplace"
+                "NFTMarket__NFTTransferFailed"
             )
         })
         /* 
@@ -361,9 +361,7 @@ describe("ERC721 Marketplace unit test", function () {
     })
 
     describe("Selling non Royalty nfts", function () {
-        let simpleNFT: SimpleNFT
         beforeEach(async function () {
-            await deployments.fixture("SimpleNFT")
             simpleNFT = await ethers.getContract("SimpleNFT")
 
             await simpleNFT.mint(user.address) // user - royalty recipient

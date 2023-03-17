@@ -32,7 +32,7 @@ library LibNFTUtils {
     ) internal returns (bytes memory) {
         (bool success, bytes memory returnData) = nftContract.call(
             abi.encodeWithSignature(
-                "safeTransferFrom(address,address,uint256,uint256,bytes",
+                "safeTransferFrom(address,address,uint256,uint256,bytes)",
                 from,
                 to,
                 tokenId,
@@ -76,12 +76,12 @@ library LibNFTUtils {
         bytes memory returndata
     ) private view returns (bytes memory) {
         if (!success) {
-            revert NFTMarket__CallFailed(returndata);
+            revert NFTMarket__NFTTransferFailed(returndata);
         }
         if (returndata.length == 0 && !isContract(account)) {
             // only check isContract if the call was successful and the return data is empty
             // otherwise we already know that it was a contract
-            revert NFTMarket__CallFailed(returndata);
+            revert NFTMarket__NFTTransferFailed(returndata);
         }
         return returndata;
     }
