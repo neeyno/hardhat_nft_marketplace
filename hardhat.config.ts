@@ -6,16 +6,14 @@ import "hardhat-deploy"
 
 dotenv.config()
 
-const MAINNET_RPC_URL =
-    `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}` ||
-    "https://eth-mainnet.alchemyapi.io/v2/your-api-key"
+const MAINNET_RPC_URL = `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`
 
-const GOERLI_RPC_URL =
-    process.env.ALCHEMY_GOERLI_URL || "https://eth-goerli/example..."
+const SEPOLIA_RPC_URL = process.env.ALCHEMY_SEPOLIA_URL
+const GOERLI_RPC_URL = process.env.ALCHEMY_GOERLI_URL
 const MUMBAI_RPC_URL = process.env.ALCHEMY_MUMBAI_URL
-const BNBTEST_RPC_URL = "https://data-seed-prebsc-1-s1.binance.org:8545"
+const BSCTEST_RPC_URL = "https://data-seed-prebsc-1-s1.binance.org:8545"
 
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "other_key"
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY
 const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY
 const BSCSCAN_API_KEY = process.env.BSCSCAN_API_KEY
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY
@@ -60,12 +58,17 @@ const config: HardhatUserConfig = {
             chainId: 5,
             //blockConfirmations: 3,
         },
-        bnbtest: {
-            url: BNBTEST_RPC_URL,
+        sepolia: {
+            url: SEPOLIA_RPC_URL,
+            accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
+            chainId: 11155111,
+        },
+        bsctest: {
+            url: BSCTEST_RPC_URL,
             accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
             chainId: 97,
         },
-        mumbai: {
+        polygonMumbai: {
             url: MUMBAI_RPC_URL,
             accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
             chainId: 80001,
@@ -80,8 +83,10 @@ const config: HardhatUserConfig = {
     etherscan: {
         // npx hardhat verify --network <NETWORK> <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>
         apiKey: {
+            sepolia: ETHERSCAN_API_KEY,
             goerli: ETHERSCAN_API_KEY,
             mainnet: ETHERSCAN_API_KEY,
+            polygonMumbai: POLYGONSCAN_API_KEY,
         },
     },
     gasReporter: {

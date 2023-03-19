@@ -10,12 +10,21 @@ import {LibNFTUtils} from "../libraries/LibNFTUtils.sol";
 import {AppStorage, Listing1155, Modifiers} from "../libraries/LibAppStorage.sol";
 import "../libraries/Errors.sol";
 
+/**
+ * @title ERC1155Marketplace contract
+ *
+ * @dev EIP-2535 Facet implementation of the multi-token marketplace.
+ * See https://eips.ethereum.org/EIPS/eip-2535
+ */
 contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
     using LibNFTUtils for address;
 
-    // External functions
-
-    // erc1155 - rewrite previous listing if it is already listed
+    /**
+     * @inheritdoc IERC1155Marketplace
+     *
+     * @dev Function call reverts if an NFT is not approved for the marketplace
+     * @dev Previous existing listing would be overwritten with new `quantity` and `price` parameters
+     */
     function listERC1155Item(
         address nftContract,
         uint256 tokenId,
@@ -27,16 +36,14 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         // check item is approved for the marketplace
         _requireIsApprovedForAll(msg.sender, address(this), nftContract);
 
-        /* 
         Listing1155 memory listing = AppStorage.layout().listings1155[
             nftContract
         ][tokenId];
 
         // check item is not listed
-        if (listing.price > 0 || listing.seller != address(0)) {
+        if (listing.price > 0 && listing.quantity == quantity) {
             revert NFTMarket__ItemAlreadyListed();
-        } 
-        */
+        }
 
         // create new item for the listing
         AppStorage.layout().listings1155[nftContract][tokenId] = Listing1155(
@@ -54,32 +61,45 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         );
     }
 
+    /**
+     * @inheritdoc IERC1155Marketplace
+     *
+     * @notice The owner of an NFT could unapprove the marketplace,
+     * which would cause this function to revert
+     * @notice msg.value must be greater or equal to the total price of the `quantity` items
+     */
     function buyERC1155Item(
         address nftContract,
         uint256 tokenId,
         uint256 quantity
     ) external payable validValue(quantity) {
         AppStorage.StorageLayout storage sl = AppStorage.layout();
-        Listing1155 memory listedItem = sl.listings1155[nftContract][tokenId];
+        Listing1155 memory item = sl.listings1155[nftContract][tokenId];
 
-        _requireIsListed(listedItem.price);
+        // _requireIsListed(listedItem.price);
+        if (item.price == 0) {
+            revert NFTMarket__ItemNotListed();
+        }
+        if (quantity > item.quantity) {
+            revert NFTMarket__InsufficientQuantity();
+        }
 
-        uint256 totalPrice = listedItem.price * quantity;
+        uint256 totalPrice = item.price * quantity;
 
         if (msg.value < totalPrice) {
             revert NFTMarket__PriceNotMet(msg.value, totalPrice);
         }
 
-        if (quantity > listedItem.quantity) {
-            revert NFTMarket__InsufficientQuantity();
-        }
+        unchecked {
+            uint256 remainingQuantity = item.quantity - quantity;
 
-        uint256 remainingQuantity = listedItem.quantity - quantity;
-
-        if (remainingQuantity == 0) {
-            delete sl.listings1155[nftContract][tokenId];
-        } else {
-            sl.listings1155[nftContract][tokenId].quantity = remainingQuantity;
+            if (remainingQuantity == 0) {
+                delete sl.listings1155[nftContract][tokenId];
+            } else {
+                sl
+                .listings1155[nftContract][tokenId]
+                    .quantity = remainingQuantity;
+            }
         }
 
         // calculate Royalty
@@ -101,17 +121,17 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
             // check royalty amount manipulation
             uint256 sellerTotal = msg.value - royaltyAmount;
             unchecked {
-                sl.profits[listedItem.seller] += sellerTotal;
+                sl.profits[item.seller] += sellerTotal;
             }
             //
         } else {
             unchecked {
-                sl.profits[listedItem.seller] += msg.value;
+                sl.profits[item.seller] += msg.value;
             }
         }
 
-        // Trasfer NFT from seller
-        bytes memory resultData = (listedItem.seller).sendNFTs(
+        // Trasfer NFTs to buyer
+        bytes memory resultData = (item.seller).sendNFTs(
             msg.sender,
             nftContract,
             tokenId,
@@ -128,6 +148,9 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         );
     }
 
+    /**
+     * @inheritdoc IERC1155Marketplace
+     */
     function updateERC1155Price(
         address nftContract,
         uint256 tokenId,
@@ -139,13 +162,16 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
 
         _requireIsOwner(msg.sender, listedItem.seller);
 
-        _requireIsListed(listedItem.price);
+        // _requireIsListed(listedItem.price);
 
         AppStorage.layout().listings1155[nftContract][tokenId].price = newPrice;
 
         emit ERC1155ItemListed(msg.sender, nftContract, tokenId, 0, newPrice);
     }
 
+    /**
+     * @inheritdoc IERC1155Marketplace
+     */
     function cancelERC1155Listing(
         address nftContract,
         uint256 tokenId
@@ -190,9 +216,9 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         }
     }
 
-    function _requireIsListed(uint256 price) private pure {
+    /* function _requireIsListed(uint256 price) private pure {
         if (price == 0) {
             revert NFTMarket__ItemNotListed();
         }
-    }
+    } */
 }
