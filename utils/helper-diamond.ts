@@ -20,7 +20,7 @@ export function getSignatures(contract: Contract): string[] {
 
 export function getSelectors(contract: Contract): string[] {
     const signatures = getSignatures(contract)
-    console.log(signatures)
+    // console.log(signatures)
 
     const selectors = signatures.reduce(
         (result: string[], currentVal: string) => {

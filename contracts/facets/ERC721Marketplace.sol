@@ -90,7 +90,7 @@ contract ERC721Marketplace is IERC721Marketplace, Modifiers {
                 }
             }
 
-            // check royalty amount manipulation
+            // checked royalty amount manipulation
             uint256 sellerTotal = msg.value - royaltyAmount;
             unchecked {
                 sl.profits[item.seller] += sellerTotal;

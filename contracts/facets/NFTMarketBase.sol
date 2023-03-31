@@ -30,7 +30,7 @@ contract NFTMarketBase is INFTMarketBase {
 
         if (!success) revert NFTMarket__TransferFailed(data);
 
-        emit MarketWithdrawal(senderProfit, data);
+        emit MarketWithdrawal(msg.sender, to, senderProfit, data);
         return success;
     }
 

@@ -8,7 +8,12 @@ import {Listing721, Listing1155} from "../libraries/LibAppStorage.sol";
  * @title NFTMarketBase interface
  */
 interface INFTMarketBase {
-    event MarketWithdrawal(uint256 amount, bytes data);
+    event MarketWithdrawal(
+        address indexed owner,
+        address indexed to,
+        uint256 indexed amount,
+        bytes data
+    );
 
     /**
      * @notice transfer account's eth balance to `to` address

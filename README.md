@@ -3,6 +3,8 @@
 </div>
 <hr>
 
+This NFT marketplace is designed with flexibility and longevity in mind. It can seamlessly integrate various types of NFTs and automatically calculate royalties, and it's built on an upgradable smart contract that implements the diamond ERC standard. This means that the smart contract can be maintained and updated with new features without the need to touch storage. Plus, the contract can easily accommodate additional storage and logic, making it an ideal solution for future-proof NFT projects.
+
 ## Requirements
 
 npm 7 or later

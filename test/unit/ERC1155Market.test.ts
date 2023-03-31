@@ -417,6 +417,7 @@ if (!developmentChains.includes(network.name)) {
                 let iface = new ethers.utils.Interface([
                     "function Error(string)",
                 ])
+                // Error(string) Solidity has another built-in error Panic(uint)
                 // const errorSelector = descr.getSighash("Error(string)")
 
                 const errorMsg = iface.encodeFunctionData("Error(string)", [
