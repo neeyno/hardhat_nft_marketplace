@@ -13,7 +13,7 @@ interface IERC721Marketplace {
     event ERC721ItemListed(
         address indexed seller,
         address indexed nftContract,
-        uint256 indexed tokenId,
+        uint256 tokenId,
         uint256 price
     );
 
@@ -24,9 +24,19 @@ interface IERC721Marketplace {
     event ERC721ItemBought(
         address indexed buyer,
         address indexed nftContract,
-        uint256 indexed tokenId,
+        uint256 tokenId,
         uint256 price,
         bytes returnData
+    );
+
+    /**
+     * @notice Emitted when an ERC721 item (`nftContract`, `tokenId`) owned by `seller` is updated with new params.
+     */
+    event ERC721ItemUpdated(
+        address indexed seller,
+        address indexed nftContract,
+        uint256 tokenId,
+        uint256 price
     );
 
     /**
@@ -35,7 +45,7 @@ interface IERC721Marketplace {
     event ERC721ItemDelisted(
         address indexed seller,
         address indexed nftContract,
-        uint256 indexed tokenId
+        uint256 tokenId
     );
 
     /**

@@ -61,7 +61,7 @@ if (!developmentChains.includes(network.name)) {
                         .listERC721Item(royaltyNft.address, 1, toWei(1))
                 ).to.be.revertedWithCustomError(
                     erc721market,
-                    "NFTMarket__NotApprovedForMarketplace"
+                    "NFTMarket__NotApproved"
                 )
             })
 
@@ -217,7 +217,7 @@ if (!developmentChains.includes(network.name)) {
                 expect(seller).to.eq(sellerBefore)
             })
 
-            it("emits event on price update - ERC721ItemListed", async function () {
+            it("emits event on price update - ERC721ItemUpdated", async function () {
                 await expect(
                     erc721market.updateERC721Price(
                         royaltyNft.address,
@@ -225,7 +225,7 @@ if (!developmentChains.includes(network.name)) {
                         toWei(4)
                     )
                 )
-                    .to.emit(erc721market, "ERC721ItemListed")
+                    .to.emit(erc721market, "ERC721ItemUpdated")
                     .withArgs(deployer.address, royaltyNft.address, 0, toWei(4))
             })
         })

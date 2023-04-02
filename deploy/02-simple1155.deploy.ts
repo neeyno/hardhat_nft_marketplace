@@ -20,4 +20,4 @@ const deploySimpleNFT1155: DeployFunction = async function (
 }
 
 export default deploySimpleNFT1155
-deploySimpleNFT1155.tags = [`all`, `SimpleNFT1155`, `erc1155`]
+deploySimpleNFT1155.tags = [`test`, `SimpleNFT1155`, `erc1155`]

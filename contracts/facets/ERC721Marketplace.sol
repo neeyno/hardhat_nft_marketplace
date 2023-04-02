@@ -8,7 +8,7 @@ import {IERC721} from "../interfaces/IERC721.sol";
 import {IERC721Marketplace} from "../interfaces/IERC721Marketplace.sol";
 import {LibNFTUtils} from "../libraries/LibNFTUtils.sol";
 import {AppStorage, Listing721, Modifiers} from "../libraries/LibAppStorage.sol";
-import "../libraries/Errors.sol";
+import "../libraries/LibErrors.sol";
 
 /**
  * @title ERC721Marketplace contract
@@ -132,7 +132,7 @@ contract ERC721Marketplace is IERC721Marketplace, Modifiers {
 
         AppStorage.layout().listings721[nftContract][tokenId].price = newPrice;
 
-        emit ERC721ItemListed(msg.sender, nftContract, tokenId, newPrice);
+        emit ERC721ItemUpdated(msg.sender, nftContract, tokenId, newPrice);
     }
 
     /**
@@ -167,12 +167,12 @@ contract ERC721Marketplace is IERC721Marketplace, Modifiers {
         uint256 tokenId
     ) private view {
         if (IERC721(nftContract).getApproved(tokenId) != target) {
-            revert NFTMarket__NotApprovedForMarketplace();
+            revert NFTMarket__NotApproved();
         }
     }
 
     function _requireIsListed(Listing721 memory item) private pure {
-        if (item.price == 0) {
+        if (item.price == 0 || item.seller == address(0)) {
             revert NFTMarket__ItemNotListed();
         }
     }

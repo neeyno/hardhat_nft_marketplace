@@ -15,7 +15,7 @@ interface IERC1155Marketplace {
     event ERC1155ItemListed(
         address indexed seller,
         address indexed nftContract,
-        uint256 indexed tokenId,
+        uint256 tokenId,
         uint256 quantity,
         uint256 price
     );
@@ -29,7 +29,7 @@ interface IERC1155Marketplace {
     event ERC1155ItemBought(
         address indexed buyer,
         address indexed nftContract,
-        uint256 indexed tokenId,
+        uint256 tokenId,
         uint256 quantity,
         uint256 price,
         bytes returnData
@@ -42,8 +42,14 @@ interface IERC1155Marketplace {
     event ERC1155ItemDelisted(
         address indexed seller,
         address indexed nftContract,
-        uint256 indexed tokenId
-        /* uint256 quantity */
+        uint256 tokenId
+    );
+
+    event ERC1155ItemUpdated(
+        address indexed seller,
+        address indexed nftContract,
+        uint256 tokenId,
+        uint256 newPrice
     );
 
     /**

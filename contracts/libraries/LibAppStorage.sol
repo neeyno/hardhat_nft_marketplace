@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.18;
 
-import "./Errors.sol";
-
 // ERC721 Listing type
 struct Listing721 {
     address seller;
@@ -39,6 +37,9 @@ library AppStorage {
 }
 
 abstract contract Modifiers {
+    // Custom error for invalid input
+    error NFTMarket__ZeroValue();
+
     // Modifiers
     modifier validValue(uint256 value) {
         if (value == 0) {

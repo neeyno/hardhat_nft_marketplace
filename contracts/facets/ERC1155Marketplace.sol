@@ -8,7 +8,7 @@ import {IERC1155} from "../interfaces/IERC1155.sol";
 import {IERC1155Marketplace} from "../interfaces/IERC1155Marketplace.sol";
 import {LibNFTUtils} from "../libraries/LibNFTUtils.sol";
 import {AppStorage, Listing1155, Modifiers} from "../libraries/LibAppStorage.sol";
-import "../libraries/Errors.sol";
+import "../libraries/LibErrors.sol";
 
 /**
  * @title ERC1155Marketplace contract
@@ -80,7 +80,7 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         if (item.price == 0) {
             revert NFTMarket__ItemNotListed();
         }
-        if (quantity > item.quantity) {
+        if (quantity > item.quantity || item.quantity == 0) {
             revert NFTMarket__InsufficientQuantity();
         }
 
@@ -166,7 +166,7 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
 
         AppStorage.layout().listings1155[nftContract][tokenId].price = newPrice;
 
-        emit ERC1155ItemListed(msg.sender, nftContract, tokenId, 0, newPrice);
+        emit ERC1155ItemUpdated(msg.sender, nftContract, tokenId, newPrice);
     }
 
     /**
@@ -206,7 +206,7 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         address nftContract
     ) private view {
         if (IERC1155(nftContract).isApprovedForAll(account, operator) != true) {
-            revert NFTMarket__NotApprovedForMarketplace();
+            revert NFTMarket__NotApproved();
         }
     }
 
@@ -216,9 +216,11 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         }
     }
 
-    /* function _requireIsListed(uint256 price) private pure {
-        if (price == 0) {
-            revert NFTMarket__ItemNotListed();
+    /* 
+    function _requireIsListed(Listing1155 memory item) private pure {
+        if (item.price == 0 || item.seller == address(0)) {
+            revert NFTMarket__ItemNotListed(); 
         }
-    } */
+    } 
+    */
 }

@@ -94,7 +94,7 @@ if (!developmentChains.includes(network.name)) {
                         .listERC1155Item(simpleNFT.address, 0, 1, toWei(1))
                 ).to.be.revertedWithCustomError(
                     erc1155market,
-                    "NFTMarket__NotApprovedForMarketplace"
+                    "NFTMarket__NotApproved"
                 )
             })
 
@@ -280,7 +280,7 @@ if (!developmentChains.includes(network.name)) {
                 expect(quantity).to.eq(QuantityBefore)
             })
 
-            it("emits event on price update - ERC1155ItemListed", async function () {
+            it("emits event on price update - ERC1155ItemUpdated", async function () {
                 await expect(
                     erc1155market.updateERC1155Price(
                         simpleNFT.address,
@@ -288,14 +288,8 @@ if (!developmentChains.includes(network.name)) {
                         toWei(4)
                     )
                 )
-                    .to.emit(erc1155market, "ERC1155ItemListed")
-                    .withArgs(
-                        deployer.address,
-                        simpleNFT.address,
-                        0,
-                        0,
-                        toWei(4)
-                    )
+                    .to.emit(erc1155market, "ERC1155ItemUpdated")
+                    .withArgs(deployer.address, simpleNFT.address, 0, toWei(4))
             })
         })
 

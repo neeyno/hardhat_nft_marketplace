@@ -2,7 +2,8 @@
 
 pragma solidity ^0.8.18;
 
-import "./Errors.sol";
+// Custom error for failed NFT transfer
+error NFTMarket__NFTTransferFailed(bytes data);
 
 library LibNFTUtils {
     function sendNFT(

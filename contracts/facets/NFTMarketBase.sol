@@ -6,7 +6,11 @@ pragma solidity =0.8.18;
 
 import {INFTMarketBase} from "../interfaces/INFTMarketBase.sol";
 import {AppStorage, Listing721, Listing1155} from "../libraries/LibAppStorage.sol";
-import "../libraries/Errors.sol";
+
+// Custom error for insufficient profit
+error NFTMarket__NoProfits();
+// Custom error for failed eth transfer
+error NFTMarket__TransferFailed(bytes data);
 
 /**
  * @title NFTMarketBase contract

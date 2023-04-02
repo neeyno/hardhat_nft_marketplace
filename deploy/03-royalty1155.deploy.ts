@@ -20,4 +20,4 @@ const deployRoyaltiNFT1155: DeployFunction = async function (
 }
 
 export default deployRoyaltiNFT1155
-deployRoyaltiNFT1155.tags = [`all`, `RoyaltiNFT1155`, `erc1155`]
+deployRoyaltiNFT1155.tags = [`test`, `RoyaltiNFT1155`, `erc1155`]

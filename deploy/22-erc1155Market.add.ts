@@ -29,6 +29,8 @@ const addERC1155MarketFacet: DeployFunction = async function (
 
     facetCuts.push(facetCut)
 
+    log("Facet Cut Action - Add")
+
     const upgradeTx = await diamond.diamondCut(facetCuts, initTarget, initData)
     await upgradeTx.wait()
 
