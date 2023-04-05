@@ -396,6 +396,7 @@ if (!developmentChains.includes(network.name)) {
                 )
                     .to.emit(erc1155market, "ERC1155ItemBought")
                     .withArgs(
+                        deployer.address,
                         buyer.address,
                         simpleNFT.address,
                         0,

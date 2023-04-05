@@ -139,6 +139,7 @@ contract ERC1155Marketplace is IERC1155Marketplace, Modifiers {
         );
 
         emit ERC1155ItemBought(
+            item.seller,
             msg.sender,
             nftContract,
             tokenId,

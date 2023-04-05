@@ -27,6 +27,7 @@ interface IERC1155Marketplace {
      * Returns result data `returnData` when transfers NFT.
      */
     event ERC1155ItemBought(
+        address indexed seller,
         address indexed buyer,
         address indexed nftContract,
         uint256 tokenId,

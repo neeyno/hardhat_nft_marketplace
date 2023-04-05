@@ -110,6 +110,7 @@ contract ERC721Marketplace is IERC721Marketplace, Modifiers {
         );
 
         emit ERC721ItemBought(
+            item.seller,
             msg.sender,
             nftContract,
             tokenId,

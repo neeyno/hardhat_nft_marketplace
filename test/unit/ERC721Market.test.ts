@@ -316,6 +316,7 @@ if (!developmentChains.includes(network.name)) {
                 )
                     .to.emit(erc721market, "ERC721ItemBought")
                     .withArgs(
+                        deployer.address,
                         user.address,
                         royaltyNft.address,
                         0,

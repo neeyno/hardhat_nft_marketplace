@@ -22,6 +22,7 @@ interface IERC721Marketplace {
      * Returns result data `returnData` when trasfers NFT.
      */
     event ERC721ItemBought(
+        address indexed seller,
         address indexed buyer,
         address indexed nftContract,
         uint256 tokenId,
