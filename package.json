@@ -14,5 +14,12 @@
     "@openzeppelin/contracts": "^4.8.1",
     "@solidstate/contracts": "^0.0.54",
     "dotenv": "^16.0.3"
+  },
+  "scripts": {
+    "slither": "slither . --solc-remaps '@openzeppelin=node_modules/@openzeppelin @solidstate=node_modules/@solidstate' --exclude naming-convention,external-function,low-level-calls",
+    "toolbox": "docker run -it --rm -v $PWD:/src trailofbits/eth-security-toolbox",
+    "lint": "solhint 'contracts/*.sol'",
+    "lint:fix": "solhint 'contracts/**/*.sol' --fix",
+    "format": "prettier --write ."
   }
 }
